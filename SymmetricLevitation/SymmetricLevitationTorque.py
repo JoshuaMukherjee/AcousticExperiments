@@ -39,7 +39,7 @@ if __name__ == "__main__":
         "areas":areas
     }
     
-    x = gradient_descent_solver(centres, optimise_force_torque_split,constrains=constrain_phase_only,objective_params=params,log=True,iters=400,lr=0.01)
+    x = gradient_descent_solver(centres, optimise_force_torque_split,constrains=constrain_phase_only,objective_params=params,log=True,iters=100,lr=0.01)
     F = optimise_force_torque_split(x,centres, board, **params)
     print(F)
 
@@ -47,10 +47,19 @@ if __name__ == "__main__":
     B = torch.tensor((0.07,0, 0.07))
     C = torch.tensor((-0.07,0, -0.07))
 
-    origin = (0,0,-0.07)
-    normal = (0,1,0)
+    # A = torch.tensor((-0.07, 0.07,0))
+    # B = torch.tensor((0.07, 0.07,0))
+    # C = torch.tensor((-0.07, -0.07,0))
+
+    origin = (0,0,0)
+    normal = (0,0,1)
 
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
+
+    # a = x.clone()
+    # print(a.shape)
+    # a[:,:,:]=0
+    # a[:,450,:]=x[:,450,:]
 
     Visualise(A,B,C,x,colour_functions=[propagate_abs], add_lines_functions=[get_lines_from_plane],add_line_args=[line_params])
     
