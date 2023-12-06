@@ -107,6 +107,6 @@ def optimise_force_torque_split(transducer_phases, points, board, targets=None, 
     # print(torch.sum(F_top,dim=2))
     # print(torch.sum(F_bottom,dim=2))
 
-    total_force_squared = ((torch.sum(F_top,dim=[1,2])-torch.sum(F_bottom,dim=[1,2])) - weight)**2
+    total_force_squared = ((torch.sum(F_top,dim=[1,2])-torch.sum(F_bottom,dim=[1,2])) - weight)**2 #Doesnt actually use force and torque
 
     return torch.real(total_force_squared)
