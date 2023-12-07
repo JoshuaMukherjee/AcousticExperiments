@@ -1,4 +1,4 @@
-from acoustools.BEM import BEM_forward_model_grad, grad_H
+from acoustools.BEM import BEM_forward_model_grad, grad_H, compute_H
 from acoustools.Gorkov import force_mesh, torque_mesh
 from acoustools.Mesh import get_weight, get_centre_of_mass_as_points
 
@@ -20,9 +20,20 @@ def BEM_levitation_objective(transducer_phases, points, board, targets=None, **o
 
     centre_of_mass = get_centre_of_mass_as_points(scatterer)
 
-    force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params)
-    torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
-    weight = get_weight(scatterer)
+    Hx, Hy, Hz = grad_H(points=points, transducers=board, **{"scatterer":scatterer })
+    H = compute_H(scatterer,board)
 
-    return (torch.sum(force,dim=[1,2]) + torch.sum(torque,dim=[1,2]) - weight)**2
+    force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
+
+    if "weight" in objective_params:
+        weight = objective_params["weight"]
+    else:
+        weight = get_weight(scatterer)
+
+    force_x = force[:,0,:]
+    force_y = force[:,1,:]
+    force_z = force[:,2,:]
+    
+    return (torch.sum(force_z,dim=1) - weight)**2  + torch.sum(torque,dim=[1,2])**2 + torch.sum(force_x,dim=1)**2 + torch.sum(force_y,dim=1)**2
     

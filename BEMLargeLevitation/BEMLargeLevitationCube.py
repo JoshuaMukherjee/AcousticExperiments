@@ -13,7 +13,7 @@ import torch
 if __name__ == "__main__":
 
     path = "Media/Cube-lam1.stl"
-    scatterer = load_scatterer(path,dy=-0.06) #Make mesh at 0,0,0
+    scatterer = load_scatterer(path) #Make mesh at 0,0,0
     
     scale_to_diameter(scatterer,0.03)
 
@@ -48,7 +48,7 @@ if __name__ == "__main__":
     }
 
 
-    x = gradient_descent_solver(centres, BEM_levitation_objective,constrains=constrain_phase_only,objective_params=params,log=True,iters=400,lr=1)
+    x = gradient_descent_solver(centres, BEM_levitation_objective,constrains=constrain_phase_only,objective_params=params,log=True,iters=2000,lr=0.5)
 
     A = torch.tensor((-0.07,0, 0.07))
     B = torch.tensor((0.07,0, 0.07))
