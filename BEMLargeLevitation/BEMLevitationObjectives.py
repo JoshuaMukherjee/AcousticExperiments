@@ -43,7 +43,7 @@ def BEM_levitation_objective(transducer_phases, points, board, targets=None, **o
     if "weight" in objective_params:
         weight = objective_params["weight"]
     else:
-        weight = get_weight(scatterer)
+        weight = -1*get_weight(scatterer)
 
     force_x = force[:,0,:]
     force_y = force[:,1,:]
@@ -71,3 +71,30 @@ def sum_top_bottom_force_torque(force_x, force_y, force_z, weight, torque, **par
     # print(torch.sum((force_z_bottom)), weight,torch.sum(force_z_top) )
 
     return (torch.sum((force_z_bottom)) + (weight+torch.sum(force_z_top)) )**2 + torch.sum(torque**2,dim=[1,2]) + torch.sum(force_x**2,dim=1) + torch.sum(force_y**2,dim=1)  - 1e-2*(torch.sum((force_z_bottom))**2)
+
+def max_magnitude_min_force(force_x, force_y, force_z, weight, torque, **params):
+    '''
+    Minimise the net force and torque while maximising the magnitudes of these forces \\
+    Needs a parameter for the top and bottom boards contributions eg `indexes = (centres[:,2,:] > centre_of_mass[:,2,:])` for a sphere or similar object
+    '''
+    top_board_idx = params["top_board_idx"]
+    a,b,c,d,e,f,g = params["weights"]
+    
+    force_z_top =force_z[top_board_idx]
+    force_z_bottom = force_z[~top_board_idx]
+
+    counter_weight = (torch.sum((force_z_bottom)) + (weight+torch.sum(force_z_top)) )**2
+    
+    min_torque = torch.sum(torque**2,dim=[1,2])
+    min_x = torch.sum(force_x,dim=1)**2
+    min_y = torch.sum(force_y,dim=1)**2
+    
+    max_magnitude_z = torch.sum((force_z_bottom))**2
+    max_magnitude_x = torch.sum((force_x**2))
+    max_magnitude_y = torch.sum((force_y**2))
+
+    # print(a*counter_weight , b*min_torque , c*min_x , d*min_y  , e*max_magnitude_z  , f*max_magnitude_x , g*max_magnitude_y, sep="\n")
+
+    return a*counter_weight + b*min_torque + c*min_x + d*min_y  - e*max_magnitude_z  - f*max_magnitude_x - g*max_magnitude_y
+
+

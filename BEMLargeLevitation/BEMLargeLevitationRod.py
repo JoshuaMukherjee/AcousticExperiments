@@ -14,10 +14,10 @@ import torch, vedo
 
 if __name__ == "__main__":
 
-    path = "Media/Cube-lam6.stl"
+    path = "Media/Cuboid-lam6.stl"
     scatterer = load_scatterer(path) #Make mesh at 0,0,0
     
-    scale_to_diameter(scatterer,0.04)
+    # scale_to_diameter(scatterer,0.06)
 
 
     print(scatterer)
@@ -43,20 +43,20 @@ if __name__ == "__main__":
         "scatterer":scatterer,
         "norms":norms,
         "areas":areas,
-        "weight":-1*get_weight(scatterer),
+        "weight":-1*9.81*0.001,
         "Hgrad":(Hx,Hy,Hz),
         "H":H,
         "loss":max_magnitude_min_force,
         "loss_params":{
               "top_board_idx":top_board_idx,
-               "weights": [1,1,1,1,1e-3,1e-1,1e-1]
+               "weights": [10,1,1,1,1e-3,1e-1,1e-1]
         }
     }
 
 
     BASE_LR = 1e-3
     MAX_LR = 1e-2
-    EPOCHS = 1000
+    EPOCHS = 2000
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
