@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force
+from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force, balance
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas, get_lines_from_plane, downsample, get_centre_of_mass_as_points, get_weight, get_plane
 from acoustools.Utilities import TRANSDUCERS, propagate_abs, get_convert_indexes
 from acoustools.BEM import compute_H, grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure
@@ -17,7 +17,7 @@ if __name__ == "__main__":
     path = "Media/Sphere-lam2.stl"
     scatterer = load_scatterer(path,dy=-0.06) #Make mesh at 0,0,0
     
-    # scale_to_diameter(scatterer,0.04)
+    scale_to_diameter(scatterer,0.04)
 
 
     print(scatterer)
@@ -42,18 +42,17 @@ if __name__ == "__main__":
         "norms":norms,
         "areas":areas,
         "weight":-1*0.0027*9.81,
-        "Hgrad":(Hx,Hy,Hz),
+        "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":max_magnitude_min_force,
+        "loss":balance,
         "loss_params":{
-              "top_board_idx":top_board_idx,
-              "weights": [1,1,1,1,1e-2,1e-1,1e-1]
+              "weights": [1,1,1,1,1]
         }
     }
 
 
-    BASE_LR = 1e-3
-    MAX_LR = 1e-2
+    BASE_LR = 1e-2
+    MAX_LR = 1e-1
     EPOCHS = 2000
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
