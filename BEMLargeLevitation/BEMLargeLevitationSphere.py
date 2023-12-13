@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force, BEM_levitation_objective_top_bottom,balance
+from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force, BEM_levitation_objective_top_bottom,balance, BEM_levitation_objective_subsample
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas, get_lines_from_plane, downsample, get_centre_of_mass_as_points
 from acoustools.Utilities import TRANSDUCERS, propagate_abs, get_convert_indexes, create_board, device, TOP_BOARD, BOTTOM_BOARD
@@ -7,6 +7,8 @@ from acoustools.Visualiser import Visualise
 from acoustools.Solvers import gradient_descent_solver, wgs_wrapper, wgs_batch
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Gorkov import force_mesh
+
+from BEMLevUtils import get_indexes_subsample
 
 import torch, vedo
 
@@ -33,16 +35,7 @@ if __name__ == "__main__":
     Hx, Hy, Hz = get_cache_or_compute_H_gradients(scatterer, board,print_lines=True)
     H = get_cache_or_compute_H(scatterer,board,print_lines=True)
 
-    # top_board = TOP_BOARD
-    # bottom_board = BOTTOM_BOARD
-
-    # Hx_top, Hy_top, Hz_top = get_cache_or_compute_H_gradients(scatterer, board=top_board,print_lines=True )
-    # Hx_bottom, Hy_bottom, Hz_bottom = get_cache_or_compute_H_gradients(scatterer, board=bottom_board,print_lines=True)
-    
-    # H_top = get_cache_or_compute_H(scatterer,top_board,print_lines=True)
-    # H_bottom = get_cache_or_compute_H(scatterer,bottom_board,print_lines=True)
-
-    # top_board_idx = (centres[:,2,:] > centre_of_mass[:,2,:]) 
+    indexes = get_indexes_subsample(10, centres)
 
     params = {
         "scatterer":scatterer,
@@ -54,7 +47,8 @@ if __name__ == "__main__":
         "loss":balance,
         "loss_params":{
               "weights": [1,1,1,1,1]
-        }
+        },
+        "indexes":indexes
     }
 
 
@@ -72,18 +66,9 @@ if __name__ == "__main__":
     #scheduler=scheduler, scheduler_args=scheduler_args    
 
 
-    x = gradient_descent_solver(centres, BEM_levitation_objective,constrains=constrain_phase_only,objective_params=params,log=True,\
+    x = gradient_descent_solver(centres, BEM_levitation_objective_subsample,constrains=constrain_phase_only,objective_params=params,log=True,\
                                 iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board)
 
-
-
-    # f_top = force_mesh(x[:,256:,:],centres,norms,areas,top_board,grad_H,params,Ax=Hx_top, Ay=Hy_top, Az=Hz_top,F=H_top)
-    # f_bottom = force_mesh(x[:,:256,:],centres,norms,areas,bottom_board,grad_H,params,Ax=Hx_bottom, Ay=Hy_bottom, Az=Hz_bottom,F=H_bottom)
-    
-    # force_x = f_top[:,0,:] + f_bottom[:,0,:]
-    # force_y = f_top[:,1,:] + f_bottom[:,1,:]
-    # force_z_top =f_top[:,2,:]
-    # force_z_bottom = f_bottom[:,2,:]
 
     force = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
     force_x = force[:,0,:]

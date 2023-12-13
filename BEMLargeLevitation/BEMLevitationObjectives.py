@@ -112,6 +112,57 @@ def BEM_levitation_objective_top_bottom(transducer_phases, points, board, target
 
     return torch.sum(loss_function(force_x, force_y, force_z, weight, torque, **loss_params),0).unsqueeze_(0)
 
+def BEM_levitation_objective_subsample(transducer_phases, points, board, targets=None, **objective_params):
+    ''' Expects an element of objective_params named:\\
+    `norms` containing all normals in the same order as points \\
+    `areas` containing the areas for the cell containing each point\\
+    `scatterer` containing the mesh to optimise around\\
+    `indexes` containing subsample to use'''
+
+
+    scatterer = objective_params["scatterer"]
+    norms = objective_params["norms"]
+    areas = objective_params["areas"]
+    indexes = objective_params["indexes"]
+
+    loss_function = objective_params["loss"]
+    
+    if "loss_params" in objective_params:
+        loss_params = objective_params["loss_params"]
+    else:
+        loss_params = {} 
+
+    params = {
+        "scatterer":scatterer
+    }
+
+    centre_of_mass = get_centre_of_mass_as_points(scatterer)
+
+    if "Hgrad" not in objective_params:
+        Hx, Hy, Hz = grad_H(None, transducers=board, **{"scatterer":scatterer })
+    else:
+        Hx, Hy, Hz = objective_params["Hgrad"]
+    
+    if "H" not in objective_params:
+        H = compute_H(scatterer,board)
+    else:
+        H = objective_params["H"]
+
+    force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
+
+    if "weight" in objective_params:
+        weight = objective_params["weight"]
+    else:
+        weight = -1*get_weight(scatterer)
+
+    force_x = force[:,0,:][:,indexes]
+    force_y = force[:,1,:][:,indexes]
+    force_z = force[:,2,:][:,indexes]
+    torque = torque[:,:,indexes]
+    
+    return loss_function(force_x, force_y, force_z, weight, torque, **loss_params)
+
 
 
 def sum_forces_torque(force_x, force_y, force_z, weight, torque, **params):
