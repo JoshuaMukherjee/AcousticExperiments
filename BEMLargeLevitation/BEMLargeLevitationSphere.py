@@ -43,7 +43,7 @@ if __name__ == "__main__":
         "norms":norms,
         "areas":areas,
         "weight":-1*0.0027*9.81,
-        # "weight":get_weight(scatterer),
+        # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
         "loss":weight_force,
