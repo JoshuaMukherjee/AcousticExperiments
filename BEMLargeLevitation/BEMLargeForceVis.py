@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force, balance
+from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force, balance, balance_max_z
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas, get_lines_from_plane, downsample, get_centre_of_mass_as_points, get_weight, get_plane
 from acoustools.Utilities import TRANSDUCERS, propagate_abs, get_convert_indexes
 from acoustools.BEM import compute_H, grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure
@@ -12,9 +12,11 @@ from acoustools.Solvers import wgs_wrapper, wgs_batch
 
 import torch, vedo
 
+import matplotlib.pyplot as plt
+
 if __name__ == "__main__":
 
-    path = "Media/Sphere-lam2.stl"
+    path = "Media/Sphere-lam1.stl"
     scatterer = load_scatterer(path,dy=-0.06) #Make mesh at 0,0,0
     
     scale_to_diameter(scatterer,0.04)
@@ -44,16 +46,17 @@ if __name__ == "__main__":
         "weight":-1*0.0027*9.81,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":balance,
+        "loss":balance_max_z,
         "loss_params":{
-              "weights": [1,1,1,1,1]
-        }
+              "weights": [1,1,1,1,5]
+        },
+        # "indexes":indexes
     }
 
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 2000
+    EPOCHS = 1000
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -89,7 +92,6 @@ if __name__ == "__main__":
     H = get_cache_or_compute_H(planar,board,print_lines=True)
 
 
-
     f = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
 
     force_x = f[:,0,:]
@@ -105,6 +107,8 @@ if __name__ == "__main__":
     xlim=[bounds[0]-pad,bounds[1]+pad]
     ylim=[bounds[2]-pad,bounds[3]+pad]
 
-    force_quiver(centres,force_x,force_z, normal,xlim,ylim,log=True)
+    force_quiver(centres,force_x,force_z, normal,xlim,ylim,show=False,log=True)
+    force_quiver(centres,norms[:,0,:],norms[:,2,:], normal,xlim,ylim,colour="orange",show=False)
+    plt.show()
     
     
