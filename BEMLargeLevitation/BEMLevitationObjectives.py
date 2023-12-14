@@ -227,8 +227,16 @@ def balance_max_z(force_x, force_y, force_z, weight, torque, **params):
     a,b,c,d,e = params["weights"]
 
     counter_weight = a*((weight - torch.sum(force_z))).unsqueeze_(0) #different to `balance` on this line
-    min_torque = b*torch.sum(torque**2,dim=[1,2])
-    max_magnitude_x = c*torch.sum((force_x**2))
-    max_magnitude_y = d*torch.sum((force_y**2))
+    min_torque = b*torch.sum(torch.abs(torque),dim=[1,2])
+    max_magnitude_x = c*torch.sum(torch.abs(force_x))
+    max_magnitude_y = d*torch.sum(torch.abs(force_y))
     max_magnitude_z =  e*torch.sum(torch.abs(force_z))
     return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z
+
+def weight_force(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c,d,e = params["weights"]
+
+    counter_weight = abs(weight) - torch.sum(force_z)
+    # max_z = -1 * torch.sum(force_z)
+    # print(counter_weight , max_z)
+    return (a*counter_weight ).unsqueeze_(0)

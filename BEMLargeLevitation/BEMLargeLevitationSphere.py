@@ -1,6 +1,7 @@
 from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force,\
-     BEM_levitation_objective_top_bottom,balance, BEM_levitation_objective_subsample, balance_max_z
-from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas, get_lines_from_plane, downsample, get_centre_of_mass_as_points
+     BEM_levitation_objective_top_bottom,balance, BEM_levitation_objective_subsample, balance_max_z, weight_force
+from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas, get_lines_from_plane, downsample,\
+      get_centre_of_mass_as_points, get_weight
 from acoustools.Utilities import TRANSDUCERS, propagate_abs, get_convert_indexes, create_board, device, TOP_BOARD, BOTTOM_BOARD, write_to_file
 from acoustools.BEM import compute_H, grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure
 from acoustools.Visualiser import Visualise
@@ -14,7 +15,7 @@ import torch, vedo
 
 if __name__ == "__main__":
 
-    path = "Media/Sphere-lam1.stl"
+    path = "Media/Sphere-lam2.stl"
     scatterer = load_scatterer(path,dy=-0.06) #Make mesh at 0,0,0
     
     scale_to_diameter(scatterer,0.04)
@@ -42,32 +43,33 @@ if __name__ == "__main__":
         "norms":norms,
         "areas":areas,
         "weight":-1*0.0027*9.81,
+        # "weight":get_weight(scatterer),
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":balance_max_z,
+        "loss":weight_force,
         "loss_params":{
-              "weights": [1,1,1,1,5]
+              "weights": [10,1,0,0,0]
         },
         # "indexes":indexes
     }
 
 
     BASE_LR = 1e-2
-    # MAX_LR = 1e3
-    EPOCHS = 1000
+    MAX_LR = 1e-1
+    EPOCHS = 2000
 
-    # scheduler = torch.optim.lr_scheduler.CyclicLR
-    # scheduler_args = {
-    #     "max_lr":MAX_LR,
-    #     "base_lr":BASE_LR,
-    #     "cycle_momentum":False,
-    #     "step_size_up":100
-    # }
-    #scheduler=scheduler, scheduler_args=scheduler_args    
+    scheduler = torch.optim.lr_scheduler.CyclicLR
+    scheduler_args = {
+        "max_lr":MAX_LR,
+        "base_lr":BASE_LR,
+        "cycle_momentum":False,
+        "step_size_up":100
+    }
+    # scheduler=scheduler, scheduler_args=scheduler_args    
 
 
     x = gradient_descent_solver(centres, BEM_levitation_objective,constrains=constrain_phase_only,objective_params=params,log=True,\
-                                iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board)
+                                iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args)
 
 
     force = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
@@ -76,7 +78,7 @@ if __name__ == "__main__":
     force_z = force[:,2,:]
     
     # print(torch.sum((force_z_bottom)).item(), params["weight"], torch.sum(force_z_top).item(), (torch.sum((force_z_bottom)) + params["weight"] + torch.sum(force_z_top)).item() )
-    print(torch.sum((force_z)).item(), params["weight"], (torch.sum((force_z)) + params["weight"]).item() )
+    print(torch.sum((force_z)).item(), params["weight"], (torch.sum((force_z)) + params["weight"]).item(), 1000 * (torch.sum((force_z)) + params["weight"]).item()/9.81)
     print(torch.sum(torch.abs(force_z)).item())
     print(torch.sum(force_x).item())
     print(torch.sum(force_y).item())
@@ -90,11 +92,11 @@ if __name__ == "__main__":
 
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
 
-    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board}],vmax=9000)
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board}],vmax=9000)
 
 
-    write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
+    # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
 
 
     
