@@ -1,5 +1,5 @@
 from BEMLevitationObjectives import BEM_levitation_objective, sum_forces_torque,sum_top_bottom_force_torque, max_magnitude_min_force,\
-     BEM_levitation_objective_top_bottom,balance, BEM_levitation_objective_subsample, balance_max_z, weight_force
+     BEM_levitation_objective_top_bottom,balance, BEM_levitation_objective_subsample, balance_max_z, weight_force, balance_greater_z
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas, get_lines_from_plane, downsample,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers
 from acoustools.Utilities import TRANSDUCERS, propagate_abs, get_convert_indexes, create_board, device, TOP_BOARD, BOTTOM_BOARD, write_to_file
@@ -19,9 +19,10 @@ if __name__ == "__main__":
     board = TRANSDUCERS
 
     wall_paths = ["Media/flat-lam1.stl","Media/flat-lam1.stl"]
-    walls = load_multiple_scatterers(wall_paths,dxs=[-0.06,0.06],rotys=[-90,90], board=board) #Make mesh at 0,0,0
+    walls = load_multiple_scatterers(wall_paths,dxs=[-0.06,0.06],rotys=[90,-90], board=board) #Make mesh at 0,0,0
     
-    ball_path = "Media/Sphere-lam1.stl"
+    
+    ball_path = "Media/Sphere-lam2.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
     scale_to_diameter(ball,0.04)
 
@@ -31,10 +32,28 @@ if __name__ == "__main__":
     # ball_cells = scatterer.map_cells_to_points(ball_points)
     # print(ball_cells)
 
+    
+
+    #Get a mask of the cell faces for the object to be levitated
+
     scatterer_cells = get_centres_as_points(scatterer)
     ball_cells = get_centres_as_points(ball)
     
-    mask = torch.isin(scatterer_cells,ball_cells).all(1)
+    B = scatterer_cells.shape[0]
+    N_ball = ball_cells.shape[2]
+    N_scatt = scatterer_cells.shape[2]
+    ball_cells_hash = torch.zeros((B,N_ball))
+    scatterer_cells_hash = torch.zeros((B,N_scatt))
+
+    for i,batch in enumerate(ball_cells.mT):
+        for j, row in enumerate(batch):
+            ball_cells_hash[i,j] = hash(row)
+    
+    for i,batch in enumerate(scatterer_cells.mT):
+        for j, row in enumerate(batch):
+            scatterer_cells_hash[i,j] = hash(row)
+
+    mask = torch.isin(scatterer_cells_hash,ball_cells_hash)
 
     # scale_to_diameter(scatterer,0.04)
 
@@ -61,9 +80,9 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":balance,
+        "loss":balance_greater_z,
         "loss_params":{
-              "weights": [10000,1,1,1,1]
+              "weights": [1000,1,1,1,10,10]
         },
         "indexes":mask.squeeze_()
     }

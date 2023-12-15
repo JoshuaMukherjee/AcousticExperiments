@@ -240,3 +240,21 @@ def weight_force(force_x, force_y, force_z, weight, torque, **params):
     # max_z = -1 * torch.sum(force_z)
     # print(counter_weight , max_z)
     return (a*counter_weight ).unsqueeze_(0)
+
+def balance_greater_z(force_x, force_y, force_z, weight, torque, **params):
+    '''
+    Aims for force as close to zero with Fz < mg
+    '''
+
+    a,b,c,d,e,f = params["weights"]
+
+    counter_weight = a*((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    min_torque = b*torch.sum(torque**2,dim=[1,2])
+    
+    max_magnitude_x = c*torch.sum((force_x**2))
+    max_magnitude_y = d*torch.sum((force_y**2))
+    max_magnitude_z =  e*torch.sum(torch.abs(force_z))
+    
+    f_z_greater = f*((weight - torch.sum(force_z))).unsqueeze_(0) #different to `balance` on this line
+
+    return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + f_z_greater
