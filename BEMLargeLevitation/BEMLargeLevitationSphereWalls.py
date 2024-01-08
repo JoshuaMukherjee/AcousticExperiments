@@ -24,7 +24,7 @@ if __name__ == "__main__":
     
     ball_path = "Media/Sphere-lam2.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
-    scale_to_diameter(ball,0.0)
+    scale_to_diameter(ball,0.04)
 
     scatterer = merge_scatterers(ball, walls)
 
