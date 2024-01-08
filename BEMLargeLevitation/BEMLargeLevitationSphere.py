@@ -7,11 +7,12 @@ from acoustools.BEM import compute_H, grad_H, get_cache_or_compute_H_gradients, 
 from acoustools.Visualiser import Visualise
 from acoustools.Solvers import gradient_descent_solver, wgs_wrapper, wgs_batch
 from acoustools.Optimise.Constraints import constrain_phase_only
-from acoustools.Gorkov import force_mesh
+from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis
 
 from BEMLevUtils import get_indexes_subsample
 
 import torch, vedo
+import matplotlib.pyplot as plt
 
 if __name__ == "__main__":
 
@@ -38,11 +39,12 @@ if __name__ == "__main__":
 
     # indexes = get_indexes_subsample(1700, centres)
 
+    weight = -1*0.0027*9.81
     params = {
         "scatterer":scatterer,
         "norms":norms,
         "areas":areas,
-        "weight":-1*0.0027*9.81,
+        "weight":weight,
         # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
@@ -56,7 +58,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 2000
+    EPOCHS = 500
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -92,8 +94,25 @@ if __name__ == "__main__":
 
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
 
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board}],vmax=9000)
+    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board}],vmax=9000)
+    
+    start = torch.tensor([[-0.06],[0],[0]])
+    end = torch.tensor([[0.06],[0],[0]])
+    Fxs, Fys, Fzs = get_force_mesh_along_axis(start, end, x, scatterer, board, Ax=Hx, Ay=Hy, Az=Hz,F=H,steps=50)
+
+    Fxs = [f.cpu().detach().numpy() for f in Fxs]
+    Fys = [f.cpu().detach().numpy() for f in Fys]
+    Fzs = [f.cpu().detach().numpy() + weight for f in Fzs]
+    
+    plt.subplot(3,1,1)
+    plt.plot(Fxs)
+    plt.subplot(3,1,2)
+    plt.plot(Fys)
+    plt.subplot(3,1,3)
+    plt.plot(Fzs)
+    
+    plt.show()
 
 
     # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)

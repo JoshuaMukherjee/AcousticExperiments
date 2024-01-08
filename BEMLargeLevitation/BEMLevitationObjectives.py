@@ -1,5 +1,5 @@
-from acoustools.BEM import BEM_forward_model_grad, grad_H, compute_H
-from acoustools.Gorkov import force_mesh, torque_mesh
+from acoustools.BEM import BEM_forward_model_grad, grad_H, compute_H, grad_2_H
+from acoustools.Gorkov import force_mesh, torque_mesh, force_mesh_derivative
 from acoustools.Mesh import get_weight, get_centre_of_mass_as_points
 from acoustools.Utilities import TOP_BOARD, BOTTOM_BOARD
 
@@ -163,6 +163,69 @@ def BEM_levitation_objective_subsample(transducer_phases, points, board, targets
     
     return loss_function(force_x, force_y, force_z, weight, torque, **loss_params)
 
+def BEM_levitation_objective_subsample_stability(transducer_phases, points, board, targets=None, **objective_params):
+    ''' Expects an element of objective_params named:\\
+    `norms` containing all normals in the same order as points \\
+    `areas` containing the areas for the cell containing each point\\
+    `scatterer` containing the mesh to optimise around\\
+    `indexes` containing subsample to use
+    Also uses the derivative of the force to add a stability component
+    '''
+
+
+    scatterer = objective_params["scatterer"]
+    norms = objective_params["norms"]
+    areas = objective_params["areas"]
+    indexes = objective_params["indexes"]
+
+    loss_function = objective_params["loss"]
+    
+    if "loss_params" in objective_params:
+        loss_params = objective_params["loss_params"]
+    else:
+        loss_params = {} 
+
+    params = {
+        "scatterer":scatterer
+    }
+
+    centre_of_mass = get_centre_of_mass_as_points(scatterer)
+
+    if "Hgrad" not in objective_params:
+        Hx, Hy, Hz = grad_H(None, transducers=board, **{"scatterer":scatterer })
+    else:
+        Hx, Hy, Hz = objective_params["Hgrad"]
+    
+    if "H" not in objective_params:
+        H = compute_H(scatterer,board)
+    else:
+        H = objective_params["H"]
+
+    if "Hgrad2" not in objective_params:
+        Haa = grad_2_H(None, transducers=board, **{"scatterer":scatterer })
+    else:
+        Haa = objective_params["Hgrad2"]
+
+
+
+    force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
+    force_grad = force_mesh_derivative(transducer_phases,points, norms, areas, board, scatterer, Hx=Hx, Hy=Hy, Hz=Hz,Haa=Haa)
+
+    if "weight" in objective_params:
+        weight = objective_params["weight"]
+    else:
+        weight = -1*get_weight(scatterer)
+
+    force_x = force[:,0,:][:,indexes]
+    force_y = force[:,1,:][:,indexes]
+    force_z = force[:,2,:][:,indexes]
+    force_grad = force_grad[:,:,indexes]
+    torque = torque[:,:,indexes]
+
+    loss_params["force_grad"] = force_grad
+    
+    return loss_function(force_x, force_y, force_z, weight, torque, **loss_params)
 
 
 def sum_forces_torque(force_x, force_y, force_z, weight, torque, **params):
@@ -258,3 +321,67 @@ def balance_greater_z(force_x, force_y, force_z, weight, torque, **params):
     f_z_greater = f*((weight - torch.sum(force_z))).unsqueeze_(0) #different to `balance` on this line
 
     return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + f_z_greater
+
+def balance_stability(force_x, force_y, force_z, weight, torque, **params):
+    '''
+    Balance with gradient of force as a stability measure 
+    '''
+
+    a,b,c,d,e,f = params["weights"]
+
+    counter_weight = a*((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    min_torque = b*torch.sum(torque**2,dim=[1,2])
+    max_magnitude_x = c*torch.sum((force_x**2))
+    max_magnitude_y = d*torch.sum((force_y**2))
+    max_magnitude_z =  e*torch.sum(torch.abs(force_z))
+
+    force_grad = params["force_grad"]
+    stability_loss = f*torch.sum(force_grad.real)
+
+    return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + stability_loss
+
+def balance_greater_z_stability(force_x, force_y, force_z, weight, torque, **params):
+    '''
+    Aims for force as close to zero with Fz < mg
+    '''
+
+    a,b,c,d,e,f,g = params["weights"]
+
+    counter_weight = a*((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    min_torque = b*torch.sum(torque**2,dim=[1,2])
+    
+    max_magnitude_x = c*torch.sum((force_x**2))
+    max_magnitude_y = d*torch.sum((force_y**2))
+    max_magnitude_z =  e*torch.sum(torch.abs(force_z))
+    
+    f_z_greater = f*((weight - torch.sum(force_z))).unsqueeze_(0) #different to `balance` on this line
+
+    force_grad = params["force_grad"]
+    stability_loss = g*torch.sum(force_grad.real)
+
+    return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + f_z_greater + stability_loss
+
+
+def balance_greater_z_stability_equal(force_x, force_y, force_z, weight, torque, **params):
+    '''
+    Aims for force as close to zero with Fz < mg
+    '''
+
+    a,b,c,d,e,f,g,h,i = params["weights"]
+
+    counter_weight = a*((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    min_torque = b*torch.sum(torque**2,dim=[1,2])
+    
+    max_magnitude_x = c*torch.sum((force_x**2))
+    max_magnitude_y = d*torch.sum((force_y**2))
+    max_magnitude_z =  e*torch.sum(torch.abs(force_z))
+    
+    f_z_greater = f*((weight - torch.sum(force_z))).unsqueeze_(0) #different to `balance` on this line
+
+    force_grad = params["force_grad"]
+    stability_loss = g*torch.sum(force_grad.real)
+
+    net_x = h*torch.sum(force_x)**2
+    net_y = i*torch.sum(force_y)**2
+
+    return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + f_z_greater + stability_loss + net_x + net_y
