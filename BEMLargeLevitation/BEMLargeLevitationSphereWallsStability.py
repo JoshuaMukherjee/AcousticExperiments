@@ -23,7 +23,7 @@ if __name__ == "__main__":
     board = TRANSDUCERS
 
     wall_paths = ["Media/flat-lam1.stl","Media/flat-lam1.stl"]
-    walls = load_multiple_scatterers(wall_paths,dxs=[-0.06,0.06],rotys=[90,-90], board=board) #Make mesh at 0,0,0
+    walls = load_multiple_scatterers(wall_paths,dxs=[-0.06,0.06],rotys=[90,-90]) #Make mesh at 0,0,0
     
     
     ball_path = "Media/Sphere-lam2.stl"
@@ -132,10 +132,10 @@ if __name__ == "__main__":
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
 
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
+    #           colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
    
-    exit()
+   
 
     # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
 
@@ -143,7 +143,7 @@ if __name__ == "__main__":
     start = torch.tensor([[0],[0],[-1*diff]])
     end = torch.tensor([[0],[0],[diff]])
     steps = 60
-    Fxs, Fys, Fzs = get_force_mesh_along_axis(start, end, x, [ball,walls], board,mask,steps=steps, use_cache=False, print_lines=True)
+    Fxs, Fys, Fzs = get_force_mesh_along_axis(start, end, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
 
     Fxs = [f.cpu().detach().numpy() for f in Fxs]
     Fys = [f.cpu().detach().numpy() for f in Fys]
