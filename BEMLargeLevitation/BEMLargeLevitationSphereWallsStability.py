@@ -63,7 +63,8 @@ if __name__ == "__main__":
 
     # indexes = get_indexes_subsample(1700, centres)
 
-    weight = -1*0.0027*9.81
+    # weight = -1*0.0027*9.81
+    weight = -1*get_weight(ball)
 
     params = {
         "scatterer":scatterer,
@@ -106,7 +107,6 @@ if __name__ == "__main__":
     force_y = force[:,1,:][:,mask]
     force_z = force[:,2,:][:,mask]
 
-    print(force_x.shape)
 
     
     # print(torch.sum((force_z_bottom)).item(), params["weight"], torch.sum(force_z_top).item(), (torch.sum((force_z_bottom)) + params["weight"] + torch.sum(force_z_top)).item() )
@@ -140,8 +140,18 @@ if __name__ == "__main__":
     # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
 
     diff = 0.0025
-    start = torch.tensor([[0],[0],[-1*diff]])
-    end = torch.tensor([[0],[0],[diff]])
+    
+    start = torch.tensor([[-1*diff],[0],[0]])
+    end = torch.tensor([[diff],[0],[0]])
+
+    # start = torch.tensor([[0],[-1*diff],[0]])
+    # end = torch.tensor([[0],[diff],[0]])
+
+    # start = torch.tensor([[0],[0],[-1*diff]])
+    # end = torch.tensor([[0],[0],[diff]])
+    
+    
+    
     steps = 60
     Fxs, Fys, Fzs = get_force_mesh_along_axis(start, end, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
 
@@ -151,7 +161,7 @@ if __name__ == "__main__":
     
 
     xticklabs = [-1* diff, 0 , diff]
-    xticks = [0, steps/2 , steps]
+    xticks = [0, steps/2 -1, steps]
     
     plt.subplot(3,1,1)
     plt.plot(Fxs)
