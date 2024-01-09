@@ -141,41 +141,37 @@ if __name__ == "__main__":
 
     diff = 0.0025
     
-    start = torch.tensor([[-1*diff],[0],[0]])
-    end = torch.tensor([[diff],[0],[0]])
+    startX = torch.tensor([[-1*diff],[0],[0]])
+    endX = torch.tensor([[diff],[0],[0]])
 
-    # start = torch.tensor([[0],[-1*diff],[0]])
-    # end = torch.tensor([[0],[diff],[0]])
+    startY = torch.tensor([[0],[-1*diff],[0]])
+    endY = torch.tensor([[0],[diff],[0]])
 
-    # start = torch.tensor([[0],[0],[-1*diff]])
-    # end = torch.tensor([[0],[0],[diff]])
+    startZ = torch.tensor([[0],[0],[-1*diff]])
+    endZ = torch.tensor([[0],[0],[diff]])
     
     
     
     steps = 60
-    Fxs, Fys, Fzs = get_force_mesh_along_axis(start, end, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
+    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
+    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
+    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
 
-    Fxs = [f.cpu().detach().numpy() for f in Fxs]
-    Fys = [f.cpu().detach().numpy() for f in Fys]
-    Fzs = [f.cpu().detach().numpy() + weight for f in Fzs]
-    
+    for i,Fxs, Fys, Fzs in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
+        Fxs = [f.cpu().detach().numpy() for f in Fxs]
+        Fys = [f.cpu().detach().numpy() for f in Fys]
+        Fzs = [f.cpu().detach().numpy() + weight for f in Fzs]
+        
 
-    xticklabs = [-1* diff, 0 , diff]
-    xticks = [0, steps/2 -1, steps]
-    
-    plt.subplot(3,1,1)
-    plt.plot(Fxs)
-    plt.ylabel("$F_x$")
-    plt.xticks(xticks, xticklabs)
-    plt.subplot(3,1,2)
-    plt.plot(Fys)
-    plt.ylabel("$F_y$")
-    plt.xticks(xticks, xticklabs)
-    plt.subplot(3,1,3)
-    plt.plot(Fzs)
-    plt.ylabel("$F_z - mg$")
-    plt.xlabel("Distance (mm)")
-    plt.xticks(xticks, xticklabs)
+        xticklabs = [-1* diff, 0 , diff]
+        xticks = [0, steps/2 -1, steps]
+        
+        plt.subplot(3,1,i+1)
+        plt.plot(Fxs, label="$F_x$")
+        plt.plot(Fys, label="$F_y$")
+        plt.plot(Fzs, label="$F_z-mg$")
+        plt.xlabel("Distance (mm)")
+        plt.xticks(xticks, xticklabs)
 
     
     plt.show()
