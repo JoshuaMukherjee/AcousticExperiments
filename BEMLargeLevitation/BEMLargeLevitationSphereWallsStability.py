@@ -78,7 +78,7 @@ if __name__ == "__main__":
         "loss":balance_greater_z_stability_equal,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
-            "weights": [1000,1,1,1,1,1,1e-20,100,50]
+            "weights": [1000,1,1,1,1,1,1e-25,5,200]
         },
         "indexes":mask.squeeze_()
     }
@@ -153,10 +153,11 @@ if __name__ == "__main__":
     
     
     steps = 60
-    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True)
-    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True)
-    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True)
+    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False)
+    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False)
+    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False)
 
+    axis= ["X","Y","Z"]
     for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
         Fxs = [f.cpu().detach().numpy() for f in Fxs]
         Fys = [f.cpu().detach().numpy() for f in Fys]
@@ -167,13 +168,19 @@ if __name__ == "__main__":
         xticks = [0, steps/2 -1, steps]
         
         plt.subplot(3,1,i+1)
-        plt.plot(Fxs, label="$F_x$")
-        plt.plot(Fys, label="$F_y$")
-        plt.plot(Fzs, label="$F_z-mg$")
-        plt.xlabel("Distance (mm)")
+        if i == 0:
+            plt.plot(Fxs, label="$F_x$")
+            plt.plot(Fys, label="$F_y$")
+            plt.plot(Fzs, label="$F_z-mg$")
+        else:
+            plt.plot(Fxs)
+            plt.plot(Fys)
+            plt.plot(Fzs)
+        plt.xlabel("$\Delta$"+axis[i]+" (m)")
         plt.xticks(xticks, xticklabs)
-        plt.ylabel("Restoring Force")
-    plt.legend()
+        plt.ylabel("Force (N)")
+    plt.figlegend()
+    plt.tight_layout()
     plt.show()
 
 
