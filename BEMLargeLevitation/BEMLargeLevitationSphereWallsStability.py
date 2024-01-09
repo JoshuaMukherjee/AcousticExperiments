@@ -153,11 +153,11 @@ if __name__ == "__main__":
     
     
     steps = 60
-    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
-    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
-    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball,walls], board,mask,steps=steps, use_cache=True, print_lines=True)
+    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True)
+    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True)
+    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True)
 
-    for i,Fxs, Fys, Fzs in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
+    for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
         Fxs = [f.cpu().detach().numpy() for f in Fxs]
         Fys = [f.cpu().detach().numpy() for f in Fys]
         Fzs = [f.cpu().detach().numpy() + weight for f in Fzs]
@@ -172,8 +172,8 @@ if __name__ == "__main__":
         plt.plot(Fzs, label="$F_z-mg$")
         plt.xlabel("Distance (mm)")
         plt.xticks(xticks, xticklabs)
-
-    
+        plt.ylabel("Restoring Force")
+    plt.legend()
     plt.show()
 
 
