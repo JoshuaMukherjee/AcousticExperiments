@@ -78,15 +78,17 @@ if __name__ == "__main__":
         "loss":balance_greater_z_stability_equal,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
-            "weights": [1000,1,1,1,1,1,1e-25,5,200]
+            #  "weights": [1000,1,1,1,1,1,1e-25,5,200] #Fig ForceXYZ
+            # "weights": [100,1,0,0,5e-5,1,1e-26,20,20] #Fig ForceXYZGradNeg
+            "weights": [100,1,0,0,5e-5,1,1e-26,20,20]
         },
         "indexes":mask.squeeze_()
     }
 
 
-    BASE_LR = 1e-2
-    MAX_LR = 1e-1
-    EPOCHS = 200
+    BASE_LR = 1e-3
+    MAX_LR = 1e-2
+    EPOCHS = 1000
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
