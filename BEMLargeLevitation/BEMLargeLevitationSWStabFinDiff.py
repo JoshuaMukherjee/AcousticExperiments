@@ -1,10 +1,10 @@
 from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
-      get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers
+      get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in
 from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
-from acoustools.Visualiser import Visualise
+from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis
@@ -77,7 +77,8 @@ if __name__ == "__main__":
         "loss":balance_greater_z_stab_fin_diff,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
-            "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
+            # "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
+            "weights": [1000,1,1,1,1,10,10,10,100,100]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -134,11 +135,21 @@ if __name__ == "__main__":
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
 
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
-    #           colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
    
    
 
     # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
+
+
+    pad = 0.005
+    planar = get_plane(scatterer,origin,normal)
+    bounds = ball.bounds()
+    xlim=[bounds[0]-pad,bounds[1]+pad]
+    ylim=[bounds[2]-pad,bounds[3]+pad]
+    force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    plt.show()
+    exit()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])
