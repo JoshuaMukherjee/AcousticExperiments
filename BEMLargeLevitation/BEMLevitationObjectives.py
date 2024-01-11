@@ -479,11 +479,15 @@ def balance_greater_z_stab_fin_diff(force_x, force_y, force_z, weight, torque, *
     max_magnitude_y = d*torch.sum((force_y**2))
     max_magnitude_z =  e*torch.sum(torch.abs(force_z))
 
+
     f_z_greater = f*((weight - torch.sum(force_z))).unsqueeze_(0) #different to `balance` on this line
 
     stab_X = g*(FxsX[0] - FxsX[2])
     stab_Y = h*(FysY[0] - FysY[2])
     stab_Z = i*(FzsZ[0] - FzsZ[2])
 
-    return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + f_z_greater - stab_X - stab_Y - stab_Z
+    net_x = j*torch.sum(force_x)**2
+    net_y = k*torch.sum(force_y)**2
+
+    return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + f_z_greater - stab_X - stab_Y - stab_Z + net_x + net_y
 
