@@ -466,7 +466,7 @@ def balance_greater_z_stability_equal(force_x, force_y, force_z, weight, torque,
 
 def balance_greater_z_stab_fin_diff(force_x, force_y, force_z, weight, torque, **params):
 
-    a,b,c,d,e,f,g,h,i = params["weights"]
+    a,b,c,d,e,f,g,h,i,j,k = params["weights"]
 
     FxsX = params["FxsX"]
     FysY = params["FysY"]
