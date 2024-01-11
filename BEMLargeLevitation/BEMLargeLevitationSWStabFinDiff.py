@@ -77,7 +77,7 @@ if __name__ == "__main__":
         "loss":balance_greater_z_stab_fin_diff,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
-            "weights": [1000,1,1,1,1,1,1e-20,100,50]
+            "weights": [10,1,1,1,1,1,1,1,1,10,10]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -85,9 +85,9 @@ if __name__ == "__main__":
     }
 
 
-    BASE_LR = 1e-2
-    MAX_LR = 1e-1
-    EPOCHS = 200
+    BASE_LR = 1e-1
+    MAX_LR = 1
+    EPOCHS = 50
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -152,10 +152,10 @@ if __name__ == "__main__":
     
     
     steps = 60
-    path = "../Media"
-    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True,path=path)
-    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True,path=path)
-    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=True,path=path)
+    path = "Media"
+    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
+    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
+    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
 
     for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
         Fxs = [f.cpu().detach().numpy() for f in Fxs]
