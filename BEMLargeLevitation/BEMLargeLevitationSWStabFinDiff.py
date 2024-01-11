@@ -77,7 +77,7 @@ if __name__ == "__main__":
         "loss":balance_greater_z_stab_fin_diff,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
-            "weights": [10,1,1,1,1,1,1,1,1,10,10]
+            "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -85,8 +85,8 @@ if __name__ == "__main__":
     }
 
 
-    BASE_LR = 1e-1
-    MAX_LR = 1
+    BASE_LR = 1e-2
+    MAX_LR = 1e-1
     EPOCHS = 50
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
@@ -94,7 +94,7 @@ if __name__ == "__main__":
         "max_lr":MAX_LR,
         "base_lr":BASE_LR,
         "cycle_momentum":False,
-        "step_size_up":100
+        "step_size_up":25
     }
     # scheduler=scheduler, scheduler_args=scheduler_args    
 
