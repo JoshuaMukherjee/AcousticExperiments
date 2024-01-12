@@ -274,15 +274,15 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
     torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
    
-    
-    startX = torch.tensor([[-1*diff],[0],[0]])
-    endX = torch.tensor([[diff],[0],[0]])
+    SCALE = 1000
+    startX = torch.tensor([[-1*diff],[0],[0]]) / SCALE
+    endX = torch.tensor([[diff],[0],[0]]) /SCALE
 
-    startY = torch.tensor([[0],[-1*diff],[0]])
-    endY = torch.tensor([[0],[diff],[0]])
+    startY = torch.tensor([[0],[-1*diff],[0]])/SCALE
+    endY = torch.tensor([[0],[diff],[0]])/SCALE
 
-    startZ = torch.tensor([[0],[0],[-1*diff]])
-    endZ = torch.tensor([[0],[0],[diff]])
+    startZ = torch.tensor([[0],[0],[-1*diff]])/SCALE
+    endZ = torch.tensor([[0],[0],[diff]])/SCALE
     
     ball = scatter_elems[0]
     walls = scatter_elems[1]
