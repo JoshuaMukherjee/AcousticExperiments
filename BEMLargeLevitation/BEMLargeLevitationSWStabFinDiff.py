@@ -9,7 +9,7 @@ from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis
 
-from BEMLevUtils import get_indexes_subsample
+from BEMLevUtils import get_H_for_fin_diffs
 
 import torch, vedo
 import numpy as np
@@ -65,6 +65,35 @@ if __name__ == "__main__":
     # weight = -1*0.0027*9.81
     weight = -1*get_weight(ball)
 
+    Hss = []
+    Hxss = []
+    Hyss = []
+    Hzss = []
+
+    startX = torch.tensor([[-1*diff],[0],[0]])
+    endX = torch.tensor([[diff],[0],[0]])
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hss.append(Hs)
+    Hxss.append(Hxs)
+    Hyss.append(Hys)
+    Hzss.append(Hzs)
+
+    startY = torch.tensor([[0],[-1*diff],[0]])
+    endY = torch.tensor([[0],[diff],[0]])
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hss.append(Hs)
+    Hxss.append(Hxs)
+    Hyss.append(Hys)
+    Hzss.append(Hzs)
+
+    startZ = torch.tensor([[0],[0],[-1*diff]])
+    endZ = torch.tensor([[0],[0],[diff]])
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hss.append(Hs)
+    Hxss.append(Hxs)
+    Hyss.append(Hys)
+    Hzss.append(Hzs)
+
     params = {
         "scatterer":scatterer,
         "norms":norms,
@@ -82,7 +111,11 @@ if __name__ == "__main__":
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
-        "scatterer_elements":[ball,walls]
+        "scatterer_elements":[ball,walls],
+        "Hss":Hss,
+        "Hxss":Hxss,
+        "Hyss":Hyss,
+        "Hzss":Hzss
     }
 
 

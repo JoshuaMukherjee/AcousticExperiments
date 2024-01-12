@@ -287,13 +287,34 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     ball = scatter_elems[0]
     walls = scatter_elems[1]
 
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    else:
+        Hs = objective_params["Hss"][0]
+        Hxs = objective_params["Hxss"][0]
+        Hys = objective_params["Hyss"][0]
+        Hzs = objective_params["Hzss"][0]
+
     FxsX, _, _ = get_force_mesh_along_axis(startX, endX, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
     
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    else:
+        Hs = objective_params["Hss"][1]
+        Hxs = objective_params["Hxss"][1]
+        Hys = objective_params["Hyss"][1]
+        Hzs = objective_params["Hzss"][1]
+
     _, FysY, _ = get_force_mesh_along_axis(startY, endY, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
     
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    else:
+        Hs = objective_params["Hss"][2]
+        Hxs = objective_params["Hxss"][2]
+        Hys = objective_params["Hyss"][2]
+        Hzs = objective_params["Hzss"][2]
+
     _, _, FzsZ = get_force_mesh_along_axis(startZ, endZ, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
 
 
