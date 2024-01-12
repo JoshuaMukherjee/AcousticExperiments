@@ -1,5 +1,5 @@
 import torch
-from acoustools.Mesh import translate, merge_scatterers
+from acoustools.Mesh import translate, merge_scatterers, get_centre_of_mass_as_points
 from acoustools.BEM import get_cache_or_compute_H, get_cache_or_compute_H_gradients
 
 def get_indexes_subsample(N, centres):
@@ -11,8 +11,7 @@ def get_indexes_subsample(N, centres):
 
 
 def get_H_for_fin_diffs(start,end, scatterers, board, steps=1, path="Media",print_lines=False, use_cache=True):
-    
-    direction = (end - start) / steps
+    direction = (end - start) / steps  
 
     translate(scatterers[0], start[0].item() - direction[0].item(), start[1].item() - direction[1].item(), start[2].item() - direction[2].item())
     scatterer = merge_scatterers(*scatterers)

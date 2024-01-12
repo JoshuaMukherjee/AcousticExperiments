@@ -70,24 +70,25 @@ if __name__ == "__main__":
     Hyss = []
     Hzss = []
 
-    startX = torch.tensor([[-1*diff],[0],[0]])
-    endX = torch.tensor([[diff],[0],[0]])
+    SCALE = 100
+    startX = torch.tensor([[-1*diff],[0],[0]])/SCALE
+    endX = torch.tensor([[diff],[0],[0]])/SCALE
     Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
     Hzss.append(Hzs)
 
-    startY = torch.tensor([[0],[-1*diff],[0]])
-    endY = torch.tensor([[0],[diff],[0]])
+    startY = torch.tensor([[0],[-1*diff],[0]])/SCALE
+    endY = torch.tensor([[0],[diff],[0]])/SCALE
     Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
     Hzss.append(Hzs)
 
-    startZ = torch.tensor([[0],[0],[-1*diff]])
-    endZ = torch.tensor([[0],[0],[diff]])
+    startZ = torch.tensor([[0],[0],[-1*diff]])/SCALE
+    endZ = torch.tensor([[0],[0],[diff]])/SCALE
     Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
@@ -121,7 +122,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 50
+    EPOCHS = 500
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -175,14 +176,14 @@ if __name__ == "__main__":
     # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
 
 
-    pad = 0.005
-    planar = get_plane(scatterer,origin,normal)
-    bounds = ball.bounds()
-    xlim=[bounds[0]-pad,bounds[1]+pad]
-    ylim=[bounds[2]-pad,bounds[3]+pad]
-    force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
-    plt.show()
-    exit()
+    # pad = 0.005
+    # planar = get_plane(scatterer,origin,normal)
+    # bounds = ball.bounds()
+    # xlim=[bounds[0]-pad,bounds[1]+pad]
+    # ylim=[bounds[2]-pad,bounds[3]+pad]
+    # force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    # plt.show()
+    # exit()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])

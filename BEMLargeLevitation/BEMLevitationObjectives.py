@@ -274,21 +274,20 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
     torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
    
-    SCALE = 1000
-    startX = torch.tensor([[-1*diff],[0],[0]]) / SCALE
-    endX = torch.tensor([[diff],[0],[0]]) /SCALE
+    startX = torch.tensor([[-1*diff],[0],[0]]) 
+    endX = torch.tensor([[diff],[0],[0]]) 
 
-    startY = torch.tensor([[0],[-1*diff],[0]])/SCALE
-    endY = torch.tensor([[0],[diff],[0]])/SCALE
+    startY = torch.tensor([[0],[-1*diff],[0]])
+    endY = torch.tensor([[0],[diff],[0]])
 
-    startZ = torch.tensor([[0],[0],[-1*diff]])/SCALE
-    endZ = torch.tensor([[0],[0],[diff]])/SCALE
+    startZ = torch.tensor([[0],[0],[-1*diff]])
+    endZ = torch.tensor([[0],[0],[diff]])
     
     ball = scatter_elems[0]
     walls = scatter_elems[1]
 
     if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
-        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX/1000, endX/1000, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     else:
         Hs = objective_params["Hss"][0]
         Hxs = objective_params["Hxss"][0]
@@ -298,7 +297,7 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     FxsX, _, _ = get_force_mesh_along_axis(startX, endX, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
     
     if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
-        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY/1000, endY/1000, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     else:
         Hs = objective_params["Hss"][1]
         Hxs = objective_params["Hxss"][1]
@@ -308,7 +307,7 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     _, FysY, _ = get_force_mesh_along_axis(startY, endY, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
     
     if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
-        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ/1000, endZ/1000, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     else:
         Hs = objective_params["Hss"][2]
         Hxs = objective_params["Hxss"][2]
