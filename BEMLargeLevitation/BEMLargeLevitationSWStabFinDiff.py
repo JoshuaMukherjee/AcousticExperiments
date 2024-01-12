@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_magnitude_grad_fin_diff
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     Haa = get_cache_or_compute_H_2_gradients(scatterer, board,print_lines=True)
 
     # indexes = get_indexes_subsample(1700, centres)
-
+ 
     # weight = -1*0.0027*9.81
     weight = -1*get_weight(ball)
 
@@ -104,11 +104,13 @@ if __name__ == "__main__":
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
         "Hgrad2":Haa,
-        "loss":balance_greater_z_stab_fin_diff,
+        "loss":levitation_balance_magnitude_grad_fin_diff,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
             # "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
-            "weights": [1000,1,1,1,1,10,10,10,100,100]
+            # "weights": [1000,1,1,1,1,20,10,50,10,10]#ForceVisFinDiff
+            # "weights": [5000,1,1,1,100,20,20,20,10,10]
+            "weights":[10,1,1]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -122,7 +124,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 500
+    EPOCHS = 400
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -168,8 +170,8 @@ if __name__ == "__main__":
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
 
-    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
    
    
 
@@ -209,7 +211,7 @@ if __name__ == "__main__":
         
 
         xticklabs = [-1* diff, 0 , diff]
-        xticks = [0, steps/2 -1, steps]
+        xticks = [0, steps/2 , steps]
         
         plt.subplot(3,1,i+1)
         plt.plot(Fxs, label="$F_x$")
