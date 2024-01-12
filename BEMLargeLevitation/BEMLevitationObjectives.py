@@ -3,6 +3,8 @@ from acoustools.Gorkov import force_mesh, torque_mesh, force_mesh_derivative, ge
 from acoustools.Mesh import get_weight, get_centre_of_mass_as_points
 from acoustools.Utilities import TOP_BOARD, BOTTOM_BOARD
 
+from BEMLevUtils import get_H_for_fin_diffs
+
 import torch
 
 def BEM_levitation_objective(transducer_phases, points, board, targets=None, **objective_params):
@@ -284,9 +286,15 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     
     ball = scatter_elems[0]
     walls = scatter_elems[1]
-    FxsX, _, _ = get_force_mesh_along_axis(startX, endX, transducer_phases, [ball.clone(),walls], board,indexes,steps=3, use_cache=True, print_lines=False)
-    _, FysY, _ = get_force_mesh_along_axis(startY, endY, transducer_phases, [ball.clone(),walls], board,indexes,steps=3, use_cache=True, print_lines=False)
-    _, _, FzsZ = get_force_mesh_along_axis(startZ, endZ, transducer_phases, [ball.clone(),walls], board,indexes,steps=3, use_cache=True, print_lines=False)
+
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    FxsX, _, _ = get_force_mesh_along_axis(startX, endX, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+    
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    _, FysY, _ = get_force_mesh_along_axis(startY, endY, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+    
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    _, _, FzsZ = get_force_mesh_along_axis(startZ, endZ, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
 
 
 
@@ -463,7 +471,6 @@ def balance_greater_z_stability_equal(force_x, force_y, force_z, weight, torque,
 
     return counter_weight + min_torque - max_magnitude_x - max_magnitude_y - max_magnitude_z + f_z_greater + stability_loss + net_x + net_y
 
-
 def balance_greater_z_stab_fin_diff(force_x, force_y, force_z, weight, torque, **params):
 
     a,b,c,d,e,f,g,h,i,j = params["weights"]
@@ -480,9 +487,9 @@ def balance_greater_z_stab_fin_diff(force_x, force_y, force_z, weight, torque, *
 
     f_z_greater = e*((weight - torch.sum(force_z))).unsqueeze_(0) #different to `balance` on this line
 
-    stab_X = f*(FxsX[0] - FxsX[2])
-    stab_Y = g*(FysY[0] - FysY[2])
-    stab_Z = h*(FzsZ[0] - FzsZ[2])
+    stab_X = f*(FxsX[0] - FxsX[-1])
+    stab_Y = g*(FysY[0] - FysY[-1])
+    stab_Z = h*(FzsZ[0] - FzsZ[-1])
 
     net_x = i*torch.sum(force_x)**2
     net_y = j*torch.sum(force_y)**2
