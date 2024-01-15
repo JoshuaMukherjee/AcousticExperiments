@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_magnitude_grad_fin_diff
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane
@@ -104,13 +104,16 @@ if __name__ == "__main__":
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
         "Hgrad2":Haa,
-        "loss":levitation_balance_magnitude_grad_fin_diff,
+        "loss":levitation_balance_greater_grad,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
             # "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
             # "weights": [1000,1,1,1,1,20,10,50,10,10]#ForceVisFinDiff
             # "weights": [5000,1,1,1,100,20,20,20,10,10]
-            "weights":[10,1,1]
+            # "weights":[10,1,1] #BMGForceXYZ - levitation_balance_magnitude_grad_fin_diff
+            # "weights":[1,1,100] #BMGGreater - levitation_balance_magnitude_grad_fin_diff_greater
+            # "weights":[10,10,1] #BGG levitation_balance_greater_grad
+            "weights":[1000,10,10000]#BGG_LargeForce levitation_balance_greater_grad
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -122,8 +125,8 @@ if __name__ == "__main__":
     }
 
 
-    BASE_LR = 1e-2
-    MAX_LR = 1e-1
+    BASE_LR = 1e-3
+    MAX_LR = 1e-2
     EPOCHS = 400
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
@@ -138,8 +141,9 @@ if __name__ == "__main__":
 
     x = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                 iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args)
+    
 
-
+    
     force = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
     force_x = force[:,0,:][:,mask]
     force_y = force[:,1,:][:,mask]
@@ -152,7 +156,7 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_x)).item(), torch.sum(force_x).item())
     print(torch.sum(torch.abs(force_y)).item(), torch.sum(force_y).item())
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item())
-
+    
 
     A = torch.tensor((-0.07,0, 0.07))
     B = torch.tensor((0.07,0, 0.07))

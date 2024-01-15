@@ -542,4 +542,53 @@ def levitation_balance_magnitude_grad_fin_diff(force_x, force_y, force_z, weight
 
     return balance + magnitude + gradient
 
+def levitation_balance_magnitude_grad_fin_diff_greater(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c = params["weights"]
+
+    FxsX = params["FxsX"]
+    FysY = params["FysY"]
+    FzsZ = params["FzsZ"]
+
+    net_x = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    # counter_weight = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    greater_weight = (weight - torch.sum(force_z) ).unsqueeze_(0)
+    balance = a* (net_x + net_y + greater_weight)
+
+    mag_x = torch.sum(force_x**2)
+    mag_y = torch.sum(force_y**2)
+    mag_z = torch.sum(force_z**2)
+    magnitude = -1 * b * (mag_x + mag_y + mag_z)
+
+
+    grad_X = FxsX[0] - FxsX[-1]
+    grad_Y = FysY[0] - FysY[-1]
+    grad_Z = FzsZ[0] - FzsZ[-1]
+    gradient = -1 *c * (grad_X + grad_Y + grad_Z)
+
+    return balance + magnitude + gradient
+
+
+def levitation_balance_greater_grad(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c = params["weights"]
+
+    FxsX = params["FxsX"]
+    FysY = params["FysY"]
+    FzsZ = params["FzsZ"]
+
+    net_x = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    net_z = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    # counter_weight = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
     
+    balance = a* (net_x + net_y + net_z)
+
+    greater_weight = b*(weight - torch.sum(force_z) ).unsqueeze_(0)
+
+
+    grad_X = FxsX[0] - FxsX[-1]
+    grad_Y = FysY[0] - FysY[-1]
+    grad_Z = FzsZ[0] - FzsZ[-1]
+    gradient = -1 *c * (grad_X + grad_Y + grad_Z)
+
+    return balance + greater_weight + gradient
