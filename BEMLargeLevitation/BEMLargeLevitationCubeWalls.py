@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad_torque
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, rotate
@@ -25,11 +25,12 @@ if __name__ == "__main__":
     walls = load_multiple_scatterers(wall_paths,dxs=[-0.06,0.06],rotys=[90,-90]) #Make mesh at 0,0,0
     
     
-    cube_path = "Media/Cube-lam2.stl"
+    cube_path = "Media/Cube-lam6.stl"
     cube = load_scatterer(cube_path) #Make mesh at 0,0,0
     scale_to_diameter(cube,0.02)
-    rotate(cube, (1,0,0), 45)
-    rotate(cube, (0,1,0), 45)
+    # rotate(cube, (1,0,0), 45)
+    # rotate(cube, (0,1,0), 45)
+    rotate(cube, (0,0,1), 45)
 
 
 
@@ -63,7 +64,7 @@ if __name__ == "__main__":
 
     Hx, Hy, Hz = get_cache_or_compute_H_gradients(scatterer, board,print_lines=True)
     H = get_cache_or_compute_H(scatterer,board,print_lines=True)
-    Haa = get_cache_or_compute_H_2_gradients(scatterer, board,print_lines=True)
+    # Haa = get_cache_or_compute_H_2_gradients(scatterer, board,print_lines=True)
 
     # indexes = get_indexes_subsample(1700, centres)
  
@@ -108,17 +109,10 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "Hgrad2":Haa,
-        "loss":levitation_balance_greater_grad,
+        # "Hgrad2":Haa,
+        "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
-            #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
-            # "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
-            # "weights": [1000,1,1,1,1,20,10,50,10,10]#ForceVisFinDiff
-            # "weights": [5000,1,1,1,100,20,20,20,10,10]
-            # "weights":[10,1,1] #BMGForceXYZ - levitation_balance_magnitude_grad_fin_diff
-            # "weights":[1,1,100] #BMGGreater - levitation_balance_magnitude_grad_fin_diff_greater
-            # "weights":[10,10,1] #BGG levitation_balance_greater_grad
-            "weights":[1000,10,10000]#BGG_LargeForce levitation_balance_greater_grad
+            "weights":[10,1,1000,1]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -187,14 +181,16 @@ if __name__ == "__main__":
     # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
 
 
-    # pad = 0.005
-    # planar = get_plane(scatterer,origin,normal)
-    # bounds = ball.bounds()
-    # xlim=[bounds[0]-pad,bounds[1]+pad]
-    # ylim=[bounds[2]-pad,bounds[3]+pad]
-    # force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
-    # plt.show()
-    # exit()
+    pad = 0.005
+    planar = get_plane(scatterer,origin,normal)
+    bounds = cube.bounds()
+    xlim=[bounds[0]-pad,bounds[1]+pad]
+    ylim=[bounds[2]-pad,bounds[3]+pad]
+
+    norms = get_normals_as_points(cube)
+    force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
+    plt.show()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])

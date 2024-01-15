@@ -592,3 +592,30 @@ def levitation_balance_greater_grad(force_x, force_y, force_z, weight, torque, *
     gradient = -1 *c * (grad_X + grad_Y + grad_Z)
 
     return balance + greater_weight + gradient
+
+
+def levitation_balance_greater_grad_torque(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c,d = params["weights"]
+
+    FxsX = params["FxsX"]
+    FysY = params["FysY"]
+    FzsZ = params["FzsZ"]
+
+    net_x = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    net_z = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    # counter_weight = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    
+    balance = a* (net_x + net_y + net_z)
+
+    greater_weight = b*(weight - torch.sum(force_z) ).unsqueeze_(0)
+
+
+    grad_X = FxsX[0] - FxsX[-1]
+    grad_Y = FysY[0] - FysY[-1]
+    grad_Z = FzsZ[0] - FzsZ[-1]
+    gradient = -1 *c * (grad_X + grad_Y + grad_Z)
+
+    min_torque = d*torch.sum(torque**2,dim=[1,2])
+
+    return balance + greater_weight + gradient + min_torque
