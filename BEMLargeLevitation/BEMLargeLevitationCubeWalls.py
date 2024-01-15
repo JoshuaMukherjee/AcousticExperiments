@@ -31,7 +31,6 @@ if __name__ == "__main__":
     rotate(cube, (1,0,0), 45)
     rotate(cube, (0,1,0), 45)
 
-   
 
 
     scatterer = merge_scatterers(cube, walls)
