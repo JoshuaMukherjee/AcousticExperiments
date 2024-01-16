@@ -2,7 +2,7 @@ from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane
-from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in
+from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs
 from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
 from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Solvers import gradient_descent_solver
@@ -176,7 +176,10 @@ if __name__ == "__main__":
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
 
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+    #           colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
    
    
 
@@ -193,7 +196,7 @@ if __name__ == "__main__":
     # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
     force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
     plt.show()
-    # exit()
+    exit()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])
@@ -203,7 +206,6 @@ if __name__ == "__main__":
 
     startZ = torch.tensor([[0],[0],[-1*diff]])
     endZ = torch.tensor([[0],[0],[diff]])
-    
     
     
     steps = 60
