@@ -294,7 +294,7 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
         Hys = objective_params["Hyss"][0]
         Hzs = objective_params["Hzss"][0]
 
-    FxsX, _, _ = get_force_mesh_along_axis(startX, endX, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+    FxsX, _, _ = get_force_mesh_along_axis(startX/1000, endX/1000, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
     
     if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
         Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY/1000, endY/1000, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
@@ -304,7 +304,7 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
         Hys = objective_params["Hyss"][1]
         Hzs = objective_params["Hzss"][1]
 
-    _, FysY, _ = get_force_mesh_along_axis(startY, endY, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+    _, FysY, _ = get_force_mesh_along_axis(startY/1000, endY/1000, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
     
     if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
         Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ/1000, endZ/1000, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
@@ -314,7 +314,7 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
         Hys = objective_params["Hyss"][2]
         Hzs = objective_params["Hzss"][2]
 
-    _, _, FzsZ = get_force_mesh_along_axis(startZ, endZ, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+    _, _, FzsZ = get_force_mesh_along_axis(startZ/1000, endZ/1000, transducer_phases, [ball.clone(),walls], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
 
 
 
