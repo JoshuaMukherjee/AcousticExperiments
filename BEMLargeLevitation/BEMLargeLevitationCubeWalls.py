@@ -22,7 +22,7 @@ if __name__ == "__main__":
     board = TRANSDUCERS
 
     wall_paths = ["Media/flat-lam1.stl","Media/flat-lam1.stl"]
-    walls = load_multiple_scatterers(wall_paths,dxs=[-0.06,0.06],rotys=[90,-90]) #Make mesh at 0,0,0
+    walls = load_multiple_scatterers(wall_paths,dxs=[-0.085,0.085],rotys=[90,-90]) #Make mesh at 0,0,0
     
     
     cube_path = "Media/Cube-lam6.stl"
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         # "Hgrad2":Haa,
         "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
-            "weights":[10,1,1000,1]
+            "weights":[1000,1,1,1000]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -157,9 +157,9 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item())
     
 
-    A = torch.tensor((-0.07,0, 0.07))
-    B = torch.tensor((0.07,0, 0.07))
-    C = torch.tensor((-0.07,0, -0.07))
+    A = torch.tensor((-0.09,0, 0.09))
+    B = torch.tensor((0.09,0, 0.09))
+    C = torch.tensor((-0.09,0, -0.09))
     normal = (0,1,0)
     origin = (0,0,-0.07)
 

@@ -22,7 +22,8 @@ if __name__ == "__main__":
     board = TRANSDUCERS
 
     wall_paths = ["Media/flat-lam1.stl","Media/flat-lam1.stl"]
-    walls = load_multiple_scatterers(wall_paths,dxs=[-0.06,0.06],rotys=[90,-90]) #Make mesh at 0,0,0
+    walls = load_multiple_scatterers(wall_paths,dxs=[-0.085,0.085],rotys=[90,-90]) #Make mesh at 0,0,0
+
     
     
     ball_path = "Media/Sphere-lam2.stl"
@@ -114,7 +115,7 @@ if __name__ == "__main__":
             # "weights":[1,1,100] #BMGGreater - levitation_balance_magnitude_grad_fin_diff_greater
             # "weights":[10,10,1] #BGG levitation_balance_greater_grad
             # "weights":[1000,10,10000]#BGG_LargeForce levitation_balance_greater_grad
-            'weights':[1000,10,10000,0]
+            'weights':[1000,100,10000,0]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -159,9 +160,9 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item())
     
 
-    A = torch.tensor((-0.07,0, 0.07))
-    B = torch.tensor((0.07,0, 0.07))
-    C = torch.tensor((-0.07,0, -0.07))
+    A = torch.tensor((-0.09,0, 0.09))
+    B = torch.tensor((0.09,0, 0.09))
+    C = torch.tensor((-0.09,0, -0.09))
     normal = (0,1,0)
     origin = (0,0,-0.07)
 
@@ -196,7 +197,7 @@ if __name__ == "__main__":
     # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
     force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
     plt.show()
-    exit()
+    # exit()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])
@@ -210,9 +211,10 @@ if __name__ == "__main__":
     
     steps = 60
     path = "Media"
-    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
-    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
-    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
+    print_lines = False
+    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
+    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
+    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
 
     for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
         Fxs = [f.cpu().detach().numpy() for f in Fxs]
