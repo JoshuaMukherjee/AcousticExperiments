@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad_torque
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad_torque, levitation_balance_mag_grad_torque
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane
@@ -64,7 +64,8 @@ if __name__ == "__main__":
     # indexes = get_indexes_subsample(1700, centres)
  
     # weight = -1*0.0027*9.81
-    weight = -1*get_weight(ball)
+    # weight = -1*get_weight(ball)
+    weight = -1*0.002*9.81
 
     Hss = []
     Hxss = []
@@ -105,7 +106,7 @@ if __name__ == "__main__":
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
         "Hgrad2":Haa,
-        "loss":levitation_balance_greater_grad_torque,
+        "loss":levitation_balance_mag_grad_torque,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
             # "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
@@ -115,7 +116,11 @@ if __name__ == "__main__":
             # "weights":[1,1,100] #BMGGreater - levitation_balance_magnitude_grad_fin_diff_greater
             # "weights":[10,10,1] #BGG levitation_balance_greater_grad
             # "weights":[1000,10,10000]#BGG_LargeForce levitation_balance_greater_grad
-            'weights':[1000,100,10000,0]
+            # 'weights':[1000,100,10000,0]
+            # 'weights':[10000,100,10000,0] #SphereLev
+            # 'weights':[1000000000,100,10000,0]
+            # 'weights':[100,1,100,1000]
+            'weights':[5,3,2,5]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -181,11 +186,12 @@ if __name__ == "__main__":
 
     Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
               colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
+#    
    
-   
-
-    # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
-
+    print("Writing...")
+    write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
+    print("File Written")
+    # exit()
 
     pad = 0.005
     planar = get_plane(scatterer,origin,normal)
