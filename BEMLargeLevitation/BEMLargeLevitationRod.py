@@ -25,16 +25,19 @@ if __name__ == "__main__":
     walls = load_multiple_scatterers(wall_paths,dxs=[-0.085,0.085],rotys=[90,-90]) #Make mesh at 0,0,0
     
     
-    cube_path = "Media/Cube-lam6.stl"
-    cube = load_scatterer(cube_path) #Make mesh at 0,0,0
-    scale_to_diameter(cube,0.02)
+    rod_path = "Media/Rod-lam2.stl"
+    rod = load_scatterer(rod_path) #Make mesh at 0,0,0
+    scale_to_diameter(rod,0.02)
     # rotate(cube, (1,0,0), 45)
     # rotate(cube, (0,1,0), 45)
-    rotate(cube, (0,0,1), 45)
+    rotate(rod, (0,0,1), 45)
 
 
 
-    scatterer = merge_scatterers(cube, walls)
+    scatterer = merge_scatterers(rod, walls)
+
+    # vedo.show(scatterer, axes=1)
+    # exit()
 
 
     # ball_points = scatterer.vertices[ball_ids]
@@ -46,9 +49,9 @@ if __name__ == "__main__":
     #Get a mask of the cell faces for the object to be levitated
 
     scatterer_cells = get_centres_as_points(scatterer)
-    cube_cells = get_centres_as_points(cube)
+    rod_cells = get_centres_as_points(rod)
     
-    mask = get_rows_in(scatterer_cells,cube_cells, expand=False)
+    mask = get_rows_in(scatterer_cells,rod_cells, expand=False)
     
     # scale_to_diameter(scatterer,0.04)
 
@@ -69,7 +72,7 @@ if __name__ == "__main__":
     # indexes = get_indexes_subsample(1700, centres)
  
     # weight = -1*0.0027*9.81
-    weight = -1*get_weight(cube)
+    weight = -1*get_weight(rod)
 
     Hss = []
     Hxss = []
@@ -79,7 +82,7 @@ if __name__ == "__main__":
     SCALE = 100
     startX = torch.tensor([[-1*diff],[0],[0]])/SCALE
     endX = torch.tensor([[diff],[0],[0]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [cube.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [rod.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -87,7 +90,7 @@ if __name__ == "__main__":
 
     startY = torch.tensor([[0],[-1*diff],[0]])/SCALE
     endY = torch.tensor([[0],[diff],[0]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [cube.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [rod.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -95,7 +98,7 @@ if __name__ == "__main__":
 
     startZ = torch.tensor([[0],[0],[-1*diff]])/SCALE
     endZ = torch.tensor([[0],[0],[diff]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [cube.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [rod.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -112,11 +115,11 @@ if __name__ == "__main__":
         # "Hgrad2":Haa,
         "loss":levitation_balance_mag_grad_torque,
         "loss_params":{
-            'weights':[2000,2000,3,2]
+            'weights':[5,2,3,5]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
-        "scatterer_elements":[cube,walls],
+        "scatterer_elements":[rod,walls],
         "Hss":Hss,
         "Hxss":Hxss,
         "Hyss":Hyss,
@@ -124,8 +127,8 @@ if __name__ == "__main__":
     }
 
 
-    BASE_LR = 1
-    MAX_LR = 10
+    BASE_LR = 1e-2
+    MAX_LR = 1e-1
     EPOCHS = 400
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
@@ -165,7 +168,7 @@ if __name__ == "__main__":
     B = torch.tensor((0.09,0, 0.09))
     C = torch.tensor((-0.09,0, -0.09))
     normal = (0,1,0)
-    origin = (0,0,-0.07)
+    origin = (0,0,-0.09)
 
     # A = torch.tensor((-0.07, 0.07,0))
     # B = torch.tensor((0.07, 0.07,0))
@@ -177,7 +180,7 @@ if __name__ == "__main__":
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
 
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
               colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
    
 
@@ -186,16 +189,16 @@ if __name__ == "__main__":
 
     pad = 0.005
     planar = get_plane(scatterer,origin,normal)
-    bounds = cube.bounds()
+    bounds = rod.bounds()
     xlim=[bounds[0]-pad,bounds[1]+pad]
     ylim=[bounds[2]-pad,bounds[3]+pad]
 
-    norms = get_normals_as_points(cube)
+    norms = get_normals_as_points(rod)
     force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
     # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
     plt.show()
 
-    exit()
+    # exit()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])
@@ -210,9 +213,9 @@ if __name__ == "__main__":
     
     steps = 60
     path = "Media"
-    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [cube.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
-    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [cube.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
-    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [cube.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
+    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [rod.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
+    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [rod.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
+    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [rod.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=False,path=path)
 
     for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
         Fxs = [f.cpu().detach().numpy() for f in Fxs]

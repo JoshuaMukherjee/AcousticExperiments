@@ -7,7 +7,7 @@ from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_o
 from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
-from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis
+from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis,torque_mesh
 
 from BEMLevUtils import get_H_for_fin_diffs
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
 
     
     
-    ball_path = "Media/Sphere-lam2.stl"
+    ball_path = "Media/Sphere-lam4.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
     scale_to_diameter(ball,0.02)
 
@@ -64,8 +64,8 @@ if __name__ == "__main__":
     # indexes = get_indexes_subsample(1700, centres)
  
     # weight = -1*0.0027*9.81
-    # weight = -1*get_weight(ball)
-    weight = -1*0.002*9.81
+    weight = -1*get_weight(ball)
+    # weight = -1*0.002*9.81
 
     Hss = []
     Hxss = []
@@ -120,7 +120,8 @@ if __name__ == "__main__":
             # 'weights':[10000,100,10000,0] #SphereLev
             # 'weights':[1000000000,100,10000,0]
             # 'weights':[100,1,100,1000]
-            'weights':[5,3,2,5]
+            # 'weights':[5,2,3,5]
+            'weights':[3,1,10,1]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -132,9 +133,9 @@ if __name__ == "__main__":
     }
 
 
-    BASE_LR = 1e-3
-    MAX_LR = 1e-2
-    EPOCHS = 400
+    BASE_LR = 1e-2
+    MAX_LR = 1e-1
+    EPOCHS = 10
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -152,19 +153,26 @@ if __name__ == "__main__":
 
     
     force = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    torque = torque_mesh(x,centres,norms,areas,centre_of_mass,board,grad_function=grad_H,grad_function_args=params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    
     force_x = force[:,0,:][:,mask]
     force_y = force[:,1,:][:,mask]
     force_z = force[:,2,:][:,mask]
+
+    torque_x = torque[:,0,:][:,mask]
+    torque_y = torque[:,1,:][:,mask]
+    torque_z = torque[:,2,:][:,mask]
+
 
 
     
     # print(torch.sum((force_z_bottom)).item(), params["weight"], torch.sum(force_z_top).item(), (torch.sum((force_z_bottom)) + params["weight"] + torch.sum(force_z_top)).item() )
     print(torch.sum((force_z)).item(), params["weight"], (torch.sum((force_z)) + params["weight"]).item(), 1000 * (torch.sum((force_z)) + params["weight"]).item()/9.81)
-    print(torch.sum(torch.abs(force_x)).item(), torch.sum(force_x).item())
-    print(torch.sum(torch.abs(force_y)).item(), torch.sum(force_y).item())
-    print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item())
+    print(torch.sum(torch.abs(force_x)).item(), torch.sum(force_x).item(), torch.sum(torque_x).item())
+    print(torch.sum(torch.abs(force_y)).item(), torch.sum(force_y).item(), torch.sum(torque_y).item())
+    print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
     
-
+    # exit()
     A = torch.tensor((-0.09,0, 0.09))
     B = torch.tensor((0.09,0, 0.09))
     C = torch.tensor((-0.09,0, -0.09))
@@ -181,16 +189,16 @@ if __name__ == "__main__":
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
 
-    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params],\
-    #           colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
 
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
-#    
+    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
+    # exit()
    
-    print("Writing...")
-    write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
-    print("File Written")
+    # print("Writing...")
+    # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
+    # print("File Written")
     # exit()
 
     pad = 0.005
@@ -217,7 +225,7 @@ if __name__ == "__main__":
     
     steps = 60
     path = "Media"
-    print_lines = False
+    print_lines = True
     FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
     FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
     FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
