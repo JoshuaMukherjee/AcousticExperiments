@@ -3,11 +3,11 @@ from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs
-from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
+from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H, propagate_BEM
 from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
-from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis,torque_mesh
+from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis,torque_mesh, gorkov_fin_diff
 import acoustools.Constants as Constants
 
 from BEMLevUtils import get_H_for_fin_diffs
@@ -34,15 +34,6 @@ if __name__ == "__main__":
     scale_to_diameter(ball, Constants.R*2)
 
     scatterer = merge_scatterers(ball, walls)
-
-    # vedo.show(scatterer,axes=1)
-    # exit()
-
-    # ball_points = scatterer.vertices[ball_ids]
-    # ball_cells = scatterer.map_cells_to_points(ball_points)
-    # print(ball_cells)
-
-    
 
     #Get a mask of the cell faces for the object to be levitated
 
@@ -163,95 +154,8 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_x)).item(), torch.sum(force_x).item(), torch.sum(torque_x).item())
     print(torch.sum(torch.abs(force_y)).item(), torch.sum(force_y).item(), torch.sum(torque_y).item())
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
-    
-    print("Writing...")
-    write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
-    print("File Written")
-    # exit()
-
-    # A = torch.tensor((0,-0.09, 0.09))
-    # B = torch.tensor((0,0.09, 0.09))
-    # C = torch.tensor((0,-0.09, -0.09))
-    # normal = (1,0,0)
-    # origin = (0,0,0)
-
-    A = torch.tensor((-0.09,0, 0.09))
-    B = torch.tensor((0.09,0, 0.09))
-    C = torch.tensor((-0.09,0, -0.09))
-    normal = (0,1,0)
-    origin = (0,0,0)
-
-    # A = torch.tensor((-0.07, 0.07,0))
-    # B = torch.tensor((0.07, 0.07,0))
-    # C = torch.tensor((-0.07, -0.07,0))
-    # normal = (0,0,1)
-    # origin = (0,0,0)
-    
-
-    line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
-    line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
-
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
-
-    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
-    # exit()
-   
-    
-
-    pad = 0.005
-    planar = get_plane(scatterer,origin,normal)
-    bounds = ball.bounds()
-    xlim=[bounds[0]-pad,bounds[1]+pad]
-    ylim=[bounds[2]-pad,bounds[3]+pad]
-
-    norms = get_normals_as_points(ball)
-    # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
-    force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
-    plt.show()
-    # exit()
-    
-    startX = torch.tensor([[-1*diff],[0],[0]])
-    endX = torch.tensor([[diff],[0],[0]])
-
-    startY = torch.tensor([[0],[-1*diff],[0]])
-    endY = torch.tensor([[0],[diff],[0]])
-
-    startZ = torch.tensor([[0],[0],[-1*diff]])
-    endZ = torch.tensor([[0],[0],[diff]])
-    
-    # exit()
-    
-    steps = 60
-    path = "Media"
-    print_lines = False
-    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
-    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
-    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
-
-    labs = ["X", "Y", "Z"]
-    for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
-        Fxs = [f.cpu().detach().numpy() for f in Fxs]
-        Fys = [f.cpu().detach().numpy() for f in Fys]
-        Fzs = [f.cpu().detach().numpy() + weight for f in Fzs]
-        
-
-        xticklabs = [-1* diff, 0 , diff]
-        xticks = [0, steps/2 , steps]
-        
-        plt.subplot(3,1,i+1)
-        plt.plot(Fxs, label="$F_x$")
-        plt.plot(Fys, label="$F_y$")
-        plt.plot(Fzs, label="$F_z-mg$")
-        plt.xlabel("$\Delta$" + labs[i] + " (mm)")
-        plt.xticks(xticks, xticklabs)
-        plt.ylabel("Restoring Force")
-        if i == 0: plt.legend()
-    plt.tight_layout()
-    plt.show()
 
 
-
-
-    
+    args = {"H":H, "scatterer":walls,"board":TRANSDUCERS}
+    U = gorkov_fin_diff(x, centre_of_mass, prop_function=propagate_BEM,prop_fun_args=args)
+    print(U)
