@@ -156,6 +156,7 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
 
 
-    args = {"H":H, "scatterer":walls,"board":TRANSDUCERS}
+    H_walls = get_cache_or_compute_H(walls, TRANSDUCERS)
+    args = {"H":H_walls, "scatterer":walls,"board":TRANSDUCERS}
     U = gorkov_fin_diff(x, centre_of_mass, prop_function=propagate_BEM,prop_fun_args=args)
     print(U)
