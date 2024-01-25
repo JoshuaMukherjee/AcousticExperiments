@@ -160,3 +160,5 @@ if __name__ == "__main__":
     args = {"H":H_walls, "scatterer":walls,"board":TRANSDUCERS}
     U = gorkov_fin_diff(x, centre_of_mass, prop_function=propagate_BEM,prop_fun_args=args)
     print(U)
+
+    
