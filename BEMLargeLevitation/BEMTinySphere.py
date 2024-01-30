@@ -3,11 +3,11 @@ from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs
-from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H, propagate_BEM
+from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H, propagate_BEM, propagate_BEM_pressure
 from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
-from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis,torque_mesh, gorkov_fin_diff
+from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis,torque_mesh, gorkov_fin_diff, force_fin_diff
 import acoustools.Constants as Constants
 
 from BEMLevUtils import get_H_for_fin_diffs
@@ -105,7 +105,8 @@ if __name__ == "__main__":
         "loss":levitation_balance_mag_grad_torque,
         # "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
-            'weights':[1,5,3,3]
+            # 'weights':[1,5,3,3]
+            'weights':[100,5,3,3]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -119,7 +120,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 800
+    EPOCHS = 400
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -156,9 +157,25 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
 
 
+
+
     H_walls = get_cache_or_compute_H(walls, TRANSDUCERS)
     args = {"H":H_walls, "scatterer":walls,"board":TRANSDUCERS}
     U = gorkov_fin_diff(x, centre_of_mass, prop_function=propagate_BEM,prop_fun_args=args)
+    force_args = {"prop_function":propagate_BEM,"prop_fun_args":args}
+    force = force_fin_diff(x,centre_of_mass,U_fun_args=force_args)
     print(U)
+    print(force)
 
-    
+
+
+    A = torch.tensor((-0.09,0, 0.09))
+    B = torch.tensor((0.09,0, 0.09))
+    C = torch.tensor((-0.09,0, -0.09))
+    normal = (0,1,0)
+    origin = (0,0,0)
+
+    line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
+
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane],add_line_args=[line_params],\
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}],vmax=9000, show=True)
