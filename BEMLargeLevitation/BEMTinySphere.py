@@ -106,7 +106,7 @@ if __name__ == "__main__":
         # "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
             # 'weights':[1,5,3,3]
-            'weights':[100,5,3,3]
+            'weights':[1,5,3,3]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -158,7 +158,6 @@ if __name__ == "__main__":
 
 
 
-
     H_walls = get_cache_or_compute_H(walls, TRANSDUCERS)
     args = {"H":H_walls, "scatterer":walls,"board":TRANSDUCERS}
     U = gorkov_fin_diff(x, centre_of_mass, prop_function=propagate_BEM,prop_fun_args=args)
@@ -166,7 +165,8 @@ if __name__ == "__main__":
     force = force_fin_diff(x,centre_of_mass,U_fun_args=force_args)
     print(U)
     print(force)
-
+    
+    exit()
 
 
     A = torch.tensor((-0.09,0, 0.09))
