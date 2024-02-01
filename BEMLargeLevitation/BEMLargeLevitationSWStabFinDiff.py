@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad_torque, levitation_balance_mag_grad_torque
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad_torque, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
@@ -71,7 +71,7 @@ if __name__ == "__main__":
  
     # weight = -1*0.0027*9.81
     # weight = -1*get_weight(ball)
-    weight = -1*(0.1/1000)*9.81
+    weight = -1*(0.1/1000)*9.81 #Measured value
     # weight = -1*0.002*9.81
 
     Hss = []
@@ -112,7 +112,7 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":levitation_balance_mag_grad_torque,
+        "loss":levitation_balance_mag_grad_torque_gerater,
         # "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
             #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
@@ -131,7 +131,7 @@ if __name__ == "__main__":
             # 'weights':[3,1,10,1]
             # 'weights':[300,10,40000,5]
             # 'weights':[450,2,-5,3]
-            'weights':[1,5,3,3]
+            'weights':[20,50,600,3e-3,1]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -145,7 +145,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 800
+    EPOCHS = 500
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {

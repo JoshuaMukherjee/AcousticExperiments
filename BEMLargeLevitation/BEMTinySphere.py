@@ -102,11 +102,11 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":levitation_balance_mag_grad_torque,
-        # "loss":levitation_balance_greater_grad_torque,
+        # "loss":levitation_balance_mag_grad_torque,
+        "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
             # 'weights':[1,5,3,3]
-            'weights':[1,5,3,3]
+            'weights':[10,5,5,3]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -120,7 +120,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 400
+    EPOCHS = 200
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -158,24 +158,34 @@ if __name__ == "__main__":
 
 
 
-    H_walls = get_cache_or_compute_H(walls, TRANSDUCERS)
-    args = {"H":H_walls, "scatterer":walls,"board":TRANSDUCERS}
-    U = gorkov_fin_diff(x, centre_of_mass, prop_function=propagate_BEM,prop_fun_args=args)
+    # H_walls = get_cache_or_compute_H(walls, TRANSDUCERS)
+    args = {"H":H, "scatterer":scatterer,"board":TRANSDUCERS}
+    stepsize= 0.000135156253*8
+    U = gorkov_fin_diff(x, centre_of_mass, prop_function=propagate_BEM,prop_fun_args=args,stepsize=stepsize)
     force_args = {"prop_function":propagate_BEM,"prop_fun_args":args}
-    force = force_fin_diff(x,centre_of_mass,U_fun_args=force_args)
+    force_u = force_fin_diff(x,centre_of_mass,U_fun_args=force_args,stepsize=stepsize)
     print(U)
-    print(force)
+    print("Gorkov \t", force_u.data)
+    print("Analytical\t", torch.sum(force[:,:,mask],dim=2).data)
+    print(force_u / torch.sum(force[:,:,mask],dim=2))
     
-    exit()
+    # exit()
 
 
     A = torch.tensor((-0.09,0, 0.09))
     B = torch.tensor((0.09,0, 0.09))
     C = torch.tensor((-0.09,0, -0.09))
+
+    # A = torch.tensor((-0.003,0, 0.003))
+    # B = torch.tensor((0.003,0, 0.003))
+    # C = torch.tensor((-0.003,0, -0.003))
+
     normal = (0,1,0)
     origin = (0,0,0)
 
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
 
     Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane],add_line_args=[line_params],\
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}],vmax=9000, show=True)
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}],vmax=11000, show=True)
+    
+    # write_to_file(x,"TinySphere.csv",num_frames=1)

@@ -1,4 +1,4 @@
-from acoustools.BEM import BEM_forward_model_grad, grad_H, compute_H, grad_2_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H
+from acoustools.BEM import BEM_forward_model_grad, grad_H, compute_H, grad_2_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H, compute_E
 from acoustools.Gorkov import force_mesh, torque_mesh, force_mesh_derivative, get_force_mesh_along_axis
 from acoustools.Mesh import get_weight, get_centre_of_mass_as_points
 from acoustools.Utilities import TOP_BOARD, BOTTOM_BOARD
@@ -270,8 +270,9 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     else:
         H = objective_params["H"]
 
-
+    E = compute_E(scatterer,points,board, H=H)
     force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    # force = force_mesh(transducer_phases,points,norms,areas,board,BEM_forward_model_grad,params,F=E)
     torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
    
     startX = torch.tensor([[-1*diff],[0],[0]]) 
@@ -622,6 +623,7 @@ def levitation_balance_greater_grad_torque(force_x, force_y, force_z, weight, to
 
 def levitation_balance_mag_grad_torque(force_x, force_y, force_z, weight, torque, **params):
     a,b,c,d = params["weights"]
+    # print(force_x)
 
     FxsX = params["FxsX"]
     FysY = params["FysY"]
@@ -646,4 +648,38 @@ def levitation_balance_mag_grad_torque(force_x, force_y, force_z, weight, torque
 
     min_torque = d*torch.sum(torque**2,dim=[1,2])
 
+    # print(balance, magnitude, gradient, min_torque)
     return balance + magnitude + gradient + min_torque
+
+def levitation_balance_mag_grad_torque_gerater(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c,d,e = params["weights"]
+    # print(force_x)
+
+    FxsX = params["FxsX"]
+    FysY = params["FysY"]
+    FzsZ = params["FzsZ"]
+
+    net_x = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    net_z = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    # counter_weight = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    
+    balance = a* (net_x + net_y + net_z)
+
+    mag_x = torch.sum(force_x**2)
+    mag_y = torch.sum(force_y**2)
+    mag_z = torch.sum(force_z**2)
+    magnitude = -1 * b * (mag_x + mag_y + mag_z)
+
+    grad_X = FxsX[-1] - FxsX[0]
+    grad_Y = FysY[-1] - FysY[0]
+    grad_Z = FzsZ[-1] - FzsZ[0]
+    print(grad_X,grad_Y,grad_Z)
+    gradient = c * (grad_X + grad_Y + grad_Z)
+
+    min_torque = d*torch.sum(torque**2,dim=[1,2])
+
+    greater_weight = e*(weight - torch.sum(force_z) ).unsqueeze_(0)
+
+    # print(balance, magnitude, gradient, min_torque)
+    return balance + magnitude + gradient + min_torque +greater_weight
