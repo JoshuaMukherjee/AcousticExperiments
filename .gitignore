@@ -2,3 +2,4 @@ Media/*
 .DS_Store
 */__pycache__/*
 */Paths/*
+*.csv
