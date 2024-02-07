@@ -674,7 +674,6 @@ def levitation_balance_mag_grad_torque_gerater(force_x, force_y, force_z, weight
     grad_X = FxsX[-1] - FxsX[0]
     grad_Y = FysY[-1] - FysY[0]
     grad_Z = FzsZ[-1] - FzsZ[0]
-    print(grad_X,grad_Y,grad_Z)
     gradient = c * (grad_X + grad_Y + grad_Z)
 
     min_torque = d*torch.sum(torque**2,dim=[1,2])
