@@ -270,7 +270,7 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     else:
         H = objective_params["H"]
 
-    E = compute_E(scatterer,points,board, H=H)
+    # E = compute_E(scatterer,points,board, H=H)
     force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
     # force = force_mesh(transducer_phases,points,norms,areas,board,BEM_forward_model_grad,params,F=E)
     torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)

@@ -29,7 +29,7 @@ if __name__ == "__main__":
     print(walls)
 
 
-    ball_path = "Media/Sphere-lam1.stl"
+    ball_path = "Media/Sphere-lam2.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
     scale_to_diameter(ball,0.02)
     # scale_to_diameter(ball, Constants.R*2)
@@ -131,7 +131,7 @@ if __name__ == "__main__":
             # 'weights':[3,1,10,1]
             # 'weights':[300,10,40000,5]
             # 'weights':[450,2,-5,3]
-            'weights':[20,50,600,3e-3,1]
+            'weights':[40,10,50,3e-3,1]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
