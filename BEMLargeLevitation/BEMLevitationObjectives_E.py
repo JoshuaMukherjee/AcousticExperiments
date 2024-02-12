@@ -1,4 +1,4 @@
-from acoustools.Gorkov import force_mesh, torque_mesh, force_mesh_derivative, get_force_mesh_along_axis
+from acoustools.Force import force_mesh, torque_mesh, force_mesh_derivative, get_force_mesh_along_axis
 from acoustools.Mesh import get_centre_of_mass_as_points, get_weight
 from acoustools.BEM import BEM_forward_model_grad
 

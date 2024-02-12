@@ -3,7 +3,7 @@ from acoustools.Mesh import load_multiple_scatterers, scatterer_file_name, load_
 from acoustools.BEM import compute_E, BEM_forward_model_grad, propagate_BEM_pressure
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Visualiser import Visualise, force_quiver
-from acoustools.Gorkov import force_mesh, torque_mesh
+from acoustools.Force import force_mesh, torque_mesh
 
 from BEMLevUtils import get_E_for_fin_diffs
 from BEMLevitationObjectives_E import levitation_balance_greater_grad_torque, BEM_levitation_objective_subsample_stability_fin_diff_E
@@ -123,8 +123,29 @@ if __name__ == "__main__":
 
     x = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff_E,constrains=constrain_phase_only,objective_params=params,log=True,\
                                 iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args)
+    print((torch.abs(H@x)))
+    print(torch.max(torch.abs(H@x)))
+    PGH = torch.abs((G@H)@x)
+    PF = torch.abs(F@x)
+    PE = torch.abs(E@x)
+    print(PE / (PF+PGH))
+    print(torch.max((PF+PGH)))
+    print(torch.min(PE / (PF+PGH)))
+
+
     
-    print(torch.abs(E@x))
+    # # ME,i = torch.max(torch.abs(E@x),dim=1)
+    # # MGH, j = torch.max(torch.abs(G@H@x),dim=1)
+    # # Pf = torch.abs(F@x)[:,i]
+    # # print(i==j, ME + Pf, MGH)
+    # # x = x.to(torch.complex128)
+    # print(torch.sum((F+G@H)@x == E@x))
+    # print(torch.sum(F@x+(G@H)@x == E@x))
+    # print(torch.sum(torch.isclose((F@x+(G@H)@x), E@x)))
+
+    exit()
+
+
     force = force_mesh(x,centres,norms,areas,board,params,Ax=Ex, Ay=Ey, Az=Ez,F=E)
     torque = torque_mesh(x,centres,norms,areas,centre_of_mass,board,force=force)
     
@@ -142,7 +163,7 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_y)).item(), torch.sum(force_y).item(), torch.sum(torque_y).item())
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
 
-
+    # exit()
 
     A = torch.tensor((-0.09,0, 0.09))
     B = torch.tensor((0.09,0, 0.09))
