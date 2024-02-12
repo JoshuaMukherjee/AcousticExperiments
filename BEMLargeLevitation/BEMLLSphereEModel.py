@@ -26,7 +26,7 @@ if __name__ == "__main__":
     # print(walls)
 
 
-    ball_path = "Media/Sphere-lam2.stl"
+    ball_path = "Media/sphere-lam2.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
     scale_to_diameter(ball,0.02)
     # scale_to_diameter(ball, Constants.R*2)
@@ -39,7 +39,7 @@ if __name__ == "__main__":
     mask = get_rows_in(scatterer_cells,ball_cells, expand=False)
 
 
-    NORMAL_SCALE = 0.001
+    NORMAL_SCALE = 0.002
     centres = get_centres_as_points(scatterer, add_normals=True, normal_scale=NORMAL_SCALE)
     centre_of_mass = get_centre_of_mass_as_points(scatterer)
 
@@ -96,7 +96,7 @@ if __name__ == "__main__":
         "E":E,
         "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
-            'weights':[10,1,7,1]
+            'weights':[1,1,1,1]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -130,7 +130,9 @@ if __name__ == "__main__":
     PE = torch.abs(E@x)
     print(PE / (PF+PGH))
     print(torch.max((PF+PGH)))
-    print(torch.min(PE / (PF+PGH)))
+    print(torch.max(PE))
+    P_ratio, i = torch.min(PE / (PF+PGH),dim=1)
+    print(P_ratio, PE[:,i], (PF+PGH)[:,i])
 
 
     
@@ -143,7 +145,7 @@ if __name__ == "__main__":
     # print(torch.sum(F@x+(G@H)@x == E@x))
     # print(torch.sum(torch.isclose((F@x+(G@H)@x), E@x)))
 
-    exit()
+    # exit()
 
 
     force = force_mesh(x,centres,norms,areas,board,params,Ax=Ex, Ay=Ey, Az=Ez,F=E)
@@ -184,9 +186,8 @@ if __name__ == "__main__":
 
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
-
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
     
 
     pad = 0.005
@@ -197,5 +198,5 @@ if __name__ == "__main__":
 
     norms = get_normals_as_points(ball)
     # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
-    force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    force_quiver(centres[:,:,mask].real,force_x,force_z, normal,xlim,ylim,show=False,log=False)
     plt.show()
