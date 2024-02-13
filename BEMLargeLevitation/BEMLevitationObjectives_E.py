@@ -144,3 +144,44 @@ def levitation_balance_mag_grad_torque(force_x, force_y, force_z, weight, torque
 
     # print(balance, magnitude, gradient, min_torque)
     return balance + magnitude + gradient + min_torque
+
+def balance_sign_mag(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c = params["weights"]
+    
+    norms = params["norms"].real
+    norms_x = norms[:,0,:]
+    norms_y = norms[:,1,:]
+    norms_z = norms[:,2,:]
+
+    net_x = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    net_z = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    balance = a* (net_x + net_y + net_z)
+
+    mag_x = torch.sum(torch.abs(force_x))
+    mag_y = torch.sum(torch.abs(force_y))
+    mag_z = torch.sum(torch.abs(force_z))
+    magnitude = -1*b * (mag_x + mag_y + mag_z)
+
+    force = torch.stack([force_x, force_y, force_z],axis=1) #Book 1 Pg. 280
+    alphas = force/norms
+    sign = c*torch.sum(torch.maximum(torch.zeros_like(alphas),alphas))**2
+
+    # sign_x = torch.sum(torch.abs(torch.sign(force_x) + torch.sign(norms_x)))
+    # sign_y = torch.sum(torch.abs(torch.sign(force_y) + torch.sign(norms_y)))
+    # sign_z = torch.sum(torch.abs(torch.sign(force_z) + torch.sign(norms_z)))
+    # sign = c/6 * (sign_x + sign_y + sign_z) # 1/6 normalises as 3 axis and when signs equal loss = 2 see Book 1 Pg. 280
+    # # print(sign)
+    # force = torch.stack([force_x, force_y, force_z],axis=1)
+    # # print(torch.sum(norms*force,1)/(torch.norm(force,2)*torch.norm(norms,2)))
+    # print(norms*force)
+    # print(torch.sum(force,dim=1))
+    # print(torch.norm(force,2,1))
+    # print(norms)
+    # angle = (torch.sum(norms*force,1)/torch.norm(force,2,1))
+    # print(angle)
+    # sign = torch.sum((torch.pi - angle)**2)
+    # exit()
+    # print(sign)
+    print(balance, magnitude, sign)
+    return balance + magnitude + sign

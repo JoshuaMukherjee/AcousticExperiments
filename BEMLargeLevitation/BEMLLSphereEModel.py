@@ -6,7 +6,7 @@ from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Force import force_mesh, torque_mesh
 
 from BEMLevUtils import get_E_for_fin_diffs
-from BEMLevitationObjectives_E import levitation_balance_greater_grad_torque, BEM_levitation_objective_subsample_stability_fin_diff_E
+from BEMLevitationObjectives_E import levitation_balance_greater_grad_torque, BEM_levitation_objective_subsample_stability_fin_diff_E, balance_sign_mag
 from acoustools.Optimise.Constraints import constrain_phase_only
 
 
@@ -28,6 +28,7 @@ if __name__ == "__main__":
 
     ball_path = "Media/sphere-lam2.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
+    print(ball)
     scale_to_diameter(ball,0.02)
     # scale_to_diameter(ball, Constants.R*2)
 
@@ -39,7 +40,7 @@ if __name__ == "__main__":
     mask = get_rows_in(scatterer_cells,ball_cells, expand=False)
 
 
-    NORMAL_SCALE = 0.002
+    NORMAL_SCALE = 0.0001
     centres = get_centres_as_points(scatterer, add_normals=True, normal_scale=NORMAL_SCALE)
     centre_of_mass = get_centre_of_mass_as_points(scatterer)
 
@@ -94,9 +95,10 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "EGrad":(Ex, Ey, Ez),
         "E":E,
-        "loss":levitation_balance_greater_grad_torque,
+        "loss":balance_sign_mag,
         "loss_params":{
-            'weights':[1,1,1,1]
+            'weights':[1,1000,100000000],
+            "norms":norms[:,:,mask.squeeze()]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -123,17 +125,6 @@ if __name__ == "__main__":
 
     x = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff_E,constrains=constrain_phase_only,objective_params=params,log=True,\
                                 iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args)
-    print((torch.abs(H@x)))
-    print(torch.max(torch.abs(H@x)))
-    PGH = torch.abs((G@H)@x)
-    PF = torch.abs(F@x)
-    PE = torch.abs(E@x)
-    print(PE / (PF+PGH))
-    print(torch.max((PF+PGH)))
-    print(torch.max(PE))
-    P_ratio, i = torch.min(PE / (PF+PGH),dim=1)
-    print(P_ratio, PE[:,i], (PF+PGH)[:,i])
-
 
     
     # # ME,i = torch.max(torch.abs(E@x),dim=1)
@@ -146,6 +137,7 @@ if __name__ == "__main__":
     # print(torch.sum(torch.isclose((F@x+(G@H)@x), E@x)))
 
     # exit()
+
 
 
     force = force_mesh(x,centres,norms,areas,board,params,Ax=Ex, Ay=Ey, Az=Ez,F=E)
@@ -197,6 +189,12 @@ if __name__ == "__main__":
     ylim=[bounds[2]-pad,bounds[3]+pad]
 
     norms = get_normals_as_points(ball)
-    # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
-    force_quiver(centres[:,:,mask].real,force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    # force_quiver(centres[:,:,mask],norms.real[:,0,:],norms.real[:,2,:], normal,xlim,ylim,show=False,log=False,colour='red')
+    # force_quiver(centres[:,:,mask].real,force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    # plt.show()
+
+    ax = plt.figure().add_subplot(projection='3d')
+    ax.quiver(centres[:,0,mask].cpu().detach().numpy(), centres[:,1,mask].cpu().detach().numpy(), centres[:,2,mask].cpu().detach().numpy(), force_x.cpu().detach().numpy(), force_y.cpu().detach().numpy(), force_z.cpu().detach().numpy(),arrow_length_ratio = 0.02)
+    # ax.quiver(centres[:,0,mask].cpu().detach().numpy(), centres[:,1,mask].cpu().detach().numpy(), centres[:,2,mask].cpu().detach().numpy(), norms.real[:,0,:].cpu().detach().numpy(), norms.real[:,1,:].cpu().detach().numpy(), norms.real[:,2,:].cpu().detach().numpy(),color='red')
+
     plt.show()
