@@ -1,4 +1,4 @@
-from acoustools.Utilities import TRANSDUCERS, get_rows_in
+from acoustools.Utilities import TRANSDUCERS, get_rows_in, add_lev_sig
 from acoustools.Mesh import load_multiple_scatterers, scatterer_file_name, load_scatterer, scale_to_diameter, merge_scatterers, get_centres_as_points, get_centre_of_mass_as_points, get_normals_as_points, get_areas, get_lines_from_plane, get_plane
 from acoustools.BEM import compute_E, BEM_forward_model_grad, propagate_BEM_pressure
 from acoustools.Solvers import gradient_descent_solver
@@ -6,7 +6,7 @@ from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Force import force_mesh, torque_mesh
 
 from BEMLevUtils import get_E_for_fin_diffs
-from BEMLevitationObjectives_E import levitation_balance_greater_grad_torque, BEM_levitation_objective_subsample_stability_fin_diff_E, balance_sign_mag
+from BEMLevitationObjectives_E import levitation_balance_greater_grad_torque, BEM_levitation_objective_subsample_stability_fin_diff_E, balance_sign_mag, BEM_E_pressure_objective, pressure_direction_loss
 from acoustools.Optimise.Constraints import constrain_phase_only
 
 
@@ -40,7 +40,7 @@ if __name__ == "__main__":
     mask = get_rows_in(scatterer_cells,ball_cells, expand=False)
 
 
-    NORMAL_SCALE = 0.0001
+    NORMAL_SCALE = 0.001
     centres = get_centres_as_points(scatterer, add_normals=True, normal_scale=NORMAL_SCALE)
     centre_of_mass = get_centre_of_mass_as_points(scatterer)
 
@@ -95,9 +95,9 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "EGrad":(Ex, Ey, Ez),
         "E":E,
-        "loss":balance_sign_mag,
+        "loss":pressure_direction_loss,
         "loss_params":{
-            'weights':[1,1000,100000000],
+            'weights':[1e5,1,1e-5,1],
             "norms":norms[:,:,mask.squeeze()]
         },
         "indexes":mask.squeeze_(),
@@ -111,7 +111,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 200
+    EPOCHS = 2000
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -123,7 +123,7 @@ if __name__ == "__main__":
     # scheduler=scheduler, scheduler_args=scheduler_args    
 
 
-    x = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff_E,constrains=constrain_phase_only,objective_params=params,log=True,\
+    x = gradient_descent_solver(centres, BEM_E_pressure_objective,constrains=constrain_phase_only,objective_params=params,log=True,\
                                 iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args)
 
     
@@ -138,14 +138,15 @@ if __name__ == "__main__":
 
     # exit()
 
-
+    x = add_lev_sig(x)
 
     force = force_mesh(x,centres,norms,areas,board,params,Ax=Ex, Ay=Ey, Az=Ez,F=E)
     torque = torque_mesh(x,centres,norms,areas,centre_of_mass,board,force=force)
     
-    force_x = force[:,0,:][:,mask]
+    force_x = force[:,0,:][:,mask] 
     force_y = force[:,1,:][:,mask]
     force_z = force[:,2,:][:,mask]
+
 
     torque_x = torque[:,0,:][:,mask]
     torque_y = torque[:,1,:][:,mask]
@@ -178,8 +179,8 @@ if __name__ == "__main__":
 
     line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
     line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
-    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
     
 
     pad = 0.005
@@ -194,7 +195,8 @@ if __name__ == "__main__":
     # plt.show()
 
     ax = plt.figure().add_subplot(projection='3d')
-    ax.quiver(centres[:,0,mask].cpu().detach().numpy(), centres[:,1,mask].cpu().detach().numpy(), centres[:,2,mask].cpu().detach().numpy(), force_x.cpu().detach().numpy(), force_y.cpu().detach().numpy(), force_z.cpu().detach().numpy(),arrow_length_ratio = 0.02)
+    scale = 1
+    ax.quiver(centres[:,0,mask].cpu().detach().numpy(), centres[:,1,mask].cpu().detach().numpy(), centres[:,2,mask].cpu().detach().numpy(), force_x.cpu().detach().numpy()* scale, force_y.cpu().detach().numpy()* scale, force_z.cpu().detach().numpy()* scale) #arrow_length_ratio = 0.02
     # ax.quiver(centres[:,0,mask].cpu().detach().numpy(), centres[:,1,mask].cpu().detach().numpy(), centres[:,2,mask].cpu().detach().numpy(), norms.real[:,0,:].cpu().detach().numpy(), norms.real[:,1,:].cpu().detach().numpy(), norms.real[:,2,:].cpu().detach().numpy(),color='red')
 
     plt.show()

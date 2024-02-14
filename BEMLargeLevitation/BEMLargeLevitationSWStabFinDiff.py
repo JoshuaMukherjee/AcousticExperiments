@@ -4,10 +4,10 @@ from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_po
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs
 from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
-from acoustools.Visualiser import Visualise, force_quiver
+from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
-from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis,torque_mesh
+from acoustools.Force import force_mesh, get_force_mesh_along_axis,torque_mesh
 import acoustools.Constants as Constants
 
 from BEMLevUtils import get_H_for_fin_diffs
@@ -131,7 +131,8 @@ if __name__ == "__main__":
             # 'weights':[3,1,10,1]
             # 'weights':[300,10,40000,5]
             # 'weights':[450,2,-5,3]
-            'weights':[40,10,50,3e-3,1]
+            # 'weights':[40,10,50,3e-3,1]
+            'weights':[100,1,20,3e-3,1]
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -145,7 +146,7 @@ if __name__ == "__main__":
 
     BASE_LR = 1e-2
     MAX_LR = 1e-1
-    EPOCHS = 500
+    EPOCHS = 200
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -225,7 +226,10 @@ if __name__ == "__main__":
 
     norms = get_normals_as_points(ball)
     # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
-    force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    # force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
+    force_quiver_3d(centres[:,:,mask], force_x, force_y, force_z, scale=10)
+
+
     plt.show()
     # exit()
     

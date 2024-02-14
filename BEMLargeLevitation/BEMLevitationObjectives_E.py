@@ -1,6 +1,7 @@
 from acoustools.Force import force_mesh, torque_mesh, force_mesh_derivative, get_force_mesh_along_axis
 from acoustools.Mesh import get_centre_of_mass_as_points, get_weight
 from acoustools.BEM import BEM_forward_model_grad
+import acoustools.Constants as Constants
 
 import torch
 
@@ -185,3 +186,45 @@ def balance_sign_mag(force_x, force_y, force_z, weight, torque, **params):
     # print(sign)
     print(balance, magnitude, sign)
     return balance + magnitude + sign
+
+def BEM_E_pressure_objective(transducer_phases, points, board, targets=None, **objective_params):
+
+    loss_function = objective_params["loss"]
+    E = objective_params["E"]
+    Ex,Ey,Ez = objective_params["EGrad"]
+
+    scatterer = objective_params["scatterer"]
+    norms = objective_params["norms"]
+    areas = objective_params["areas"]
+    indexes = objective_params["indexes"]
+    weight = objective_params["weight"]
+    loss_params = objective_params["loss_params"]
+
+    return loss_function(transducer_phases,points,norms,areas,board,weight,indexes,Ax=Ex,Ay=Ey,Az=Ez,F=E,**loss_params)
+
+
+def pressure_direction_loss(transducer_phases,points,normals,areas,board,weight,indexes,Ax,Ay,Az,F, **params):
+
+    a,b,c,d = params["weights"]
+
+    pressure = torch.abs(F@transducer_phases)[:,indexes]
+    pressure_grad_x = torch.abs(Ax@transducer_phases)[:,indexes]
+    pressure_grad_y = torch.abs(Ay@transducer_phases)[:,indexes]
+    pressure_grad_z = torch.abs(Az@transducer_phases)[:,indexes]
+    pressure_grad = torch.stack([pressure_grad_x,pressure_grad_y,pressure_grad_z],dim=1)
+
+    force = force_mesh(transducer_phases,points,normals,areas,board=board,F=F,Ax=Ax,Ay=Ay,Az=Az)[:,:,indexes]
+    force[:,2,:] += weight
+
+    alpha = torch.abs(pressure)**2 - 1/Constants.k**2 * torch.norm(pressure_grad,p=2,dim=1)**2
+    alpha = alpha.permute(0,2,1)
+    # f = 1/(4 * Constants.p_0 * Constants.c_0**2) * areas[:,:,indexes] * alpha * normals[:,:,indexes]
+    # print(force, f, alpha)
+    alpha = torch.sum(alpha)
+    # pen = torch.sum(torch.maximum(torch.zeros_like(alpha),alpha))
+
+    max_p = d* torch.sum(torch.abs(pressure))
+
+    loss = a*torch.sum(force)**2 - b*torch.sum(force**2) + c*alpha +max_p
+    # print(a*torch.sum(force)**2 , b*torch.sum(force**2) , c*alpha)
+    return loss.unsqueeze(0)
