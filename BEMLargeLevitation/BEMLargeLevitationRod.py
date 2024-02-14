@@ -7,7 +7,7 @@ from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_o
 from acoustools.Visualiser import Visualise, force_quiver
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
-from acoustools.Gorkov import force_mesh, get_force_mesh_along_axis,torque_mesh
+from acoustools.Force import force_mesh, get_force_mesh_along_axis,torque_mesh
 
 from BEMLevUtils import get_H_for_fin_diffs
 

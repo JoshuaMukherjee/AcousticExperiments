@@ -33,21 +33,23 @@ def objective(transducer_phases, points, board, targets, **objective_params):
 
 
 if __name__ == "__main__":
-    points = create_points(4,1,z=0) #create 4 points in the z=0 plane
+    points = torch.tensor([[0.03, 0.03, -0.03, -0.03], [0.03, -0.03, 0.03, -0.03], [ 0,0,0,0]]).to(device).unsqueeze(0)
+
     fd = 20
-    Nf = 1
+    Nf = 4
     params = {
         'Nf':Nf,
         'fd':fd
     }
 
-    targets= torch.tensor([0.7,0.8,0.65,0.9]).to(device)
+    targets= torch.tensor([0.8,0.8,0.6,0.7]).to(device)
 
-    lr = 10
+    lr = 1
     Epochs=2000
     x =  gradient_descent_solver(points, objective, targets=targets, objective_params=params,log =True,iters=Epochs, lr=lr, constrains=constrain_phase_only)
     print(torch.abs(propagate(x,points)))
     print(compute_PI(x, points, fd, Nf))
+    print(targets)
 
     A = torch.tensor((-0.09, 0.09,0))
     B = torch.tensor((0.09, 0.09,0))
