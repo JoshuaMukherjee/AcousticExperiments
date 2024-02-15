@@ -1,24 +1,26 @@
-from acoustools.Utilities import propagate, create_points, device
+from acoustools.Utilities import propagate, create_points, device, TRANSDUCERS
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Visualiser import Visualise
 from acoustools.Optimise.Constraints import constrain_phase_only
 import torch
 
-def compute_PI(activations, points, fd, Nf):
-    A = 0.124
-    B = 0.000326
-    C = 0.00692
-    D = -0.236
-    E = -0.0000000133
-    F = -0.0000000413
-    G = -0.0000471
-    H = -0.000653
-    I = -0.0000892
-    J = 0.0591
+A = 0.124
+B = 0.000326
+C = 0.00692
+D = -0.236
+E = -0.0000000133
+F = -0.0000000413
+G = -0.0000471
+H = -0.000653
+I = -0.0000892
+J = 0.0591
 
-    MPT = 750.58
+MPT = 750.58
 
-    p = propagate(activations,points)
+
+def compute_PI(activations, points,board, fd, Nf):
+
+    p = propagate(activations,points,board)
     pressure = torch.abs(p)
     p_mpt = pressure - MPT
 
@@ -28,12 +30,13 @@ def objective(transducer_phases, points, board, targets, **objective_params):
 
     fd = objective_params['fd']
     Nf = objective_params['Nf']
-    PI = compute_PI(transducer_phases, points, fd, Nf)
+    PI = compute_PI(transducer_phases, points,board, fd, Nf)
     return torch.sum((PI-targets)**2).unsqueeze(0)
 
 
 if __name__ == "__main__":
     points = torch.tensor([[0.03, 0.03, -0.03, -0.03], [0.03, -0.03, 0.03, -0.03], [ 0,0,0,0]]).to(device).unsqueeze(0)
+    # points = torch.tensor([[0.06, 0.06, -0.06, -0.06], [0.06, -0.06, 0.06, -0.06], [ 0,0,0,0]]).to(device).unsqueeze(0)
 
     fd = 20
     Nf = 4
@@ -47,9 +50,14 @@ if __name__ == "__main__":
     lr = 1
     Epochs=2000
     x =  gradient_descent_solver(points, objective, targets=targets, objective_params=params,log =True,iters=Epochs, lr=lr, constrains=constrain_phase_only)
-    print(torch.abs(propagate(x,points)))
-    print(compute_PI(x, points, fd, Nf))
+    pressure = torch.abs(propagate(x,points))
+    pressure_perc = pressure - MPT
+    print(pressure)
+    print(compute_PI(x, points,TRANSDUCERS, fd, Nf))
+    print(torch.mean(compute_PI(x, points,TRANSDUCERS, fd, Nf)), torch.mean(targets))
     print(targets)
+    print(pressure_perc/torch.max(pressure_perc))
+
 
     A = torch.tensor((-0.09, 0.09,0))
     B = torch.tensor((0.09, 0.09,0))
