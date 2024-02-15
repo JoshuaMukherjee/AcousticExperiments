@@ -672,7 +672,7 @@ def levitation_balance_mag_grad_torque_gerater(force_x, force_y, force_z, weight
     magnitude = -1 * b * (mag_x + mag_y + mag_z)
 
     grad_X = FxsX[-1] - FxsX[0]
-    grad_Y = FysY[-1] - FysY[0]
+    grad_Y = 2*(FysY[-1] - FysY[0])
     grad_Z = FzsZ[-1] - FzsZ[0]
     gradient = c * (grad_X + grad_Y + grad_Z)
 
