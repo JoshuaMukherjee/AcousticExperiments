@@ -45,10 +45,10 @@ if __name__ == "__main__":
         'fd':fd
     }
 
-    targets= torch.tensor([0.8,0.8,0.6,0.7]).to(device)
+    targets= torch.tensor([0.3,0.2,0.25,0.35]).to(device) #Seems to only work for PI = [0,0.35]
 
     lr = 1
-    Epochs=2000
+    Epochs=200
     x =  gradient_descent_solver(points, objective, targets=targets, objective_params=params,log =True,iters=Epochs, lr=lr, constrains=constrain_phase_only)
     pressure = torch.abs(propagate(x,points))
     pressure_perc = pressure - MPT
@@ -56,7 +56,7 @@ if __name__ == "__main__":
     print(compute_PI(x, points,TRANSDUCERS, fd, Nf))
     print(torch.mean(compute_PI(x, points,TRANSDUCERS, fd, Nf)), torch.mean(targets))
     print(targets)
-    print(pressure_perc/torch.max(pressure_perc))
+    # print(pressure_perc/torch.max(pressure_perc))
 
 
     A = torch.tensor((-0.09, 0.09,0))
