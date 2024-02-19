@@ -45,6 +45,7 @@ if __name__ == "__main__":
         'fd':fd
     }
 
+    # targets= torch.tensor([0.8,0.7,0.9,0.35]).to(device) #Seems to only work for PI = [0,0.35]
     targets= torch.tensor([0.3,0.2,0.25,0.35]).to(device) #Seems to only work for PI = [0,0.35]
 
     lr = 1
@@ -54,7 +55,7 @@ if __name__ == "__main__":
     pressure_perc = pressure - MPT
     print(pressure)
     print(compute_PI(x, points,TRANSDUCERS, fd, Nf))
-    print(torch.mean(compute_PI(x, points,TRANSDUCERS, fd, Nf)), torch.mean(targets))
+    # print(torch.mean(compute_PI(x, points,TRANSDUCERS, fd, Nf)), torch.mean(targets))
     print(targets)
     # print(pressure_perc/torch.max(pressure_perc))
 
@@ -65,5 +66,5 @@ if __name__ == "__main__":
     normal = (0,1,0)
     origin = (0,0,0)
 
-    Visualise(A,B,C, x, points=points)
+    # Visualise(A,B,C, x, points=points)
 
