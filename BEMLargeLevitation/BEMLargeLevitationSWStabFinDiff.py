@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, balance_greater_z_stab_fin_diff, levitation_balance_greater_grad_torque, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_greater_grad_torque, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
@@ -112,27 +112,12 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":levitation_balance_mag_grad_torque_gerater,
+        "loss":levitation_balance_grad_torque_direction,
         # "loss":levitation_balance_greater_grad_torque,
         "loss_params":{
-            #   "weights": [1000,1,1,1,1,1,1e-17,1000,10000]
-            # "weights": [1000,1,1,1,1,10,10,10,100,100]#ForceXYZFinDiff
-            # "weights": [1000,1,1,1,1,20,10,50,10,10]#ForceVisFinDiff
-            # "weights": [5000,1,1,1,100,20,20,20,10,10]
-            # "weights":[10,1,1] #BMGForceXYZ - levitation_balance_magnitude_grad_fin_diff
-            # "weights":[1,1,100] #BMGGreater - levitation_balance_magnitude_grad_fin_diff_greater
-            # "weights":[10,10,1] #BGG levitation_balance_greater_grad
-            # "weights":[1000,10,10000]#BGG_LargeForce levitation_balance_greater_grad
-            # 'weights':[1000,100,10000,0]
-            # 'weights':[10000,100,10000,0] #SphereLev
-            # 'weights':[1000000000,100,10000,0]
-            # 'weights':[100,1,100,1000]
-            # 'weights':[5,2,3,5]
-            # 'weights':[3,1,10,1]
-            # 'weights':[300,10,40000,5]
-            # 'weights':[450,2,-5,3]
-            # 'weights':[40,10,50,3e-3,1]
-            'weights':[1,0,5,0,0] #Add penalty for wrong direction?
+            "norms":norms[:,:,mask.squeeze()],
+            # 'weights':[40,5,0,50000] 
+            'weights':[40,5,1,50000] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -183,7 +168,7 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
     
     print("Writing...")
-    write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
+    # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
     print("File Written")
     # exit()
 

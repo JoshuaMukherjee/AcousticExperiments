@@ -682,3 +682,32 @@ def levitation_balance_mag_grad_torque_gerater(force_x, force_y, force_z, weight
 
     # print(balance, magnitude, gradient, min_torque)
     return balance + magnitude + gradient + min_torque +greater_weight
+
+def levitation_balance_grad_torque_direction(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c,d = params["weights"]
+    norms = params['norms']
+
+    FxsX = params["FxsX"]
+    FysY = params["FysY"]
+    FzsZ = params["FzsZ"]
+
+    net_x = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    net_z = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    balance = a* (net_x + net_y + net_z)
+
+    grad_X = FxsX[-1] - FxsX[0]
+    grad_Y = FysY[-1] - FysY[0]
+    grad_Z = FzsZ[-1] - FzsZ[0]
+    gradient = b * (grad_X + grad_Y + grad_Z)
+    
+    min_torque = c*torch.sum(torque**2,dim=[1,2])
+
+    force = torch.stack([force_x, force_y, force_z],dim=1)
+    alpha = force / norms #should be less than 0
+    alpha = alpha.real
+    force_neg = d* torch.sum(torch.maximum(torch.zeros_like(alpha), alpha)**2)
+    
+
+    return balance + gradient + min_torque + force_neg
+
