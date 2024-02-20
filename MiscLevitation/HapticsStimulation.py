@@ -35,18 +35,20 @@ def objective(transducer_phases, points, board, targets, **objective_params):
 
 
 if __name__ == "__main__":
-    points = torch.tensor([[0.03, 0.03, -0.03, -0.03], [0.03, -0.03, 0.03, -0.03], [ 0,0,0,0]]).to(device).unsqueeze(0)
+    # points = torch.tensor([[0.03, 0.03, -0.03, -0.03], [0.03, -0.03, 0.03, -0.03], [ 0,0,0,0]]).to(device).unsqueeze(0)
     # points = torch.tensor([[0.06, 0.06, -0.06, -0.06], [0.06, -0.06, 0.06, -0.06], [ 0,0,0,0]]).to(device).unsqueeze(0)
+    points = create_points(1,1,z=0)
 
     fd = 20
-    Nf = 4
+    Nf = 1
     params = {
         'Nf':Nf,
         'fd':fd
     }
 
     # targets= torch.tensor([0.8,0.7,0.9,0.35]).to(device) #Seems to only work for PI = [0,0.35]
-    targets= torch.tensor([0.3,0.2,0.25,0.35]).to(device) #Seems to only work for PI = [0,0.35]
+    # targets= torch.tensor([0.3,0.2,0.25,0.35]).to(device) #Seems to only work for PI = [0,0.35]
+    targets = torch.tensor([0.7]).to(device)
 
     lr = 1
     Epochs=200
@@ -66,5 +68,5 @@ if __name__ == "__main__":
     normal = (0,1,0)
     origin = (0,0,0)
 
-    # Visualise(A,B,C, x, points=points)
+    Visualise(A,B,C, x, points=points,vmax=9000)
 
