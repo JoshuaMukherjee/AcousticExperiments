@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_greater_grad_torque, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_grad_torque_direction_greater, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
@@ -21,6 +21,10 @@ if __name__ == "__main__":
 
     diff = 0.0025
     board = TRANSDUCERS
+
+    '''
+    Load meshes and compute values 
+    '''
  
     wall_paths = ["Media/flat-lam1.stl","Media/flat-lam1.stl"]
     walls = load_multiple_scatterers(wall_paths,dxs=[-0.175/2,0.175/2],rotys=[90,-90]) #Make mesh at 0,0,0
@@ -103,6 +107,10 @@ if __name__ == "__main__":
     Hxss.append(Hxs)
     Hyss.append(Hys)
     Hzss.append(Hzs)
+    
+    '''
+    Set parameters for optimisation
+    '''
 
     params = {
         "scatterer":scatterer,
@@ -112,12 +120,12 @@ if __name__ == "__main__":
         # "weight":-1*0.00100530964,
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
-        "loss":levitation_balance_grad_torque_direction,
-        # "loss":levitation_balance_greater_grad_torque,
+        # "loss":levitation_balance_grad_torque_direction,
+        "loss":levitation_balance_grad_torque_direction_greater,
         "loss_params":{
             "norms":norms[:,:,mask.squeeze()],
-            # 'weights':[40,5,0,50000] 
-            'weights':[40,5,1,50000] 
+            # 'weights':[40,5,1,50000] 
+            'weights':[20,15,1,0,1e-2] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -142,6 +150,10 @@ if __name__ == "__main__":
     }
     # scheduler=scheduler, scheduler_args=scheduler_args    
 
+    '''
+    Phase retrieval
+    '''
+
 
     x = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                 iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args)
@@ -159,6 +171,9 @@ if __name__ == "__main__":
     torque_y = torque[:,1,:][:,mask]
     torque_z = torque[:,2,:][:,mask]
 
+    '''
+    Evaluate solution
+    '''
 
     
     # print(torch.sum((force_z_bottom)).item(), params["weight"], torch.sum(force_z_top).item(), (torch.sum((force_z_bottom)) + params["weight"] + torch.sum(force_z_top)).item() )
@@ -168,7 +183,7 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
     
     print("Writing...")
-    # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
+    write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
     print("File Written")
     # exit()
 
@@ -236,6 +251,19 @@ if __name__ == "__main__":
     FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
     FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
 
+
+    BUFFER_SCALE = 1.2 
+
+    xmax = torch.max(torch.tensor([[FxsX, FxsY, FxsZ]]) )
+    ymax = torch.max(torch.tensor([[FysX, FysY, FysZ]]) )
+    zmax = torch.max(torch.tensor([[FzsX, FzsY, FzsZ]]) )
+    ytickmax = max([xmax, ymax,zmax]) * BUFFER_SCALE
+
+    xmin = torch.min(torch.tensor([[FxsX, FxsY, FxsZ]]) )
+    ymin = torch.min(torch.tensor([[FysX, FysY, FysZ]]) )
+    zmin = torch.min(torch.tensor([[FzsX, FzsY, FzsZ]]) )
+    ytickmin = min([xmin, ymin,zmin]) * BUFFER_SCALE
+
     labs = ["X", "Y", "Z"]
     for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
         Fxs = [f.cpu().detach().numpy() for f in Fxs]
@@ -252,7 +280,8 @@ if __name__ == "__main__":
         plt.plot(Fzs, label="$F_z-mg$")
         plt.xlabel("$\Delta$" + labs[i] + " (mm)")
         plt.xticks(xticks, xticklabs)
-        plt.ylabel("Restoring Force")
+        plt.ylim(ytickmin,ytickmax)
+        plt.ylabel("Force (N)")
         if i == 0: plt.legend()
     plt.tight_layout()
     plt.show()

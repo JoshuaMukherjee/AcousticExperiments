@@ -228,3 +228,35 @@ def pressure_direction_loss(transducer_phases,points,normals,areas,board,weight,
     loss = a*torch.sum(force)**2 - b*torch.sum(force**2) + c*alpha +max_p
     # print(a*torch.sum(force)**2 , b*torch.sum(force**2) , c*alpha)
     return loss.unsqueeze(0)
+
+
+
+def levitation_balance_grad_torque_direction_greater(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c,d,e = params["weights"]
+    norms = params['norms']
+
+    FxsX = params["FxsX"]
+    FysY = params["FysY"]
+    FzsZ = params["FzsZ"]
+
+    net_x = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    net_z = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    balance = a* (net_x + net_y + net_z)
+
+    grad_X = FxsX[-1] - FxsX[0]
+    grad_Y = FysY[-1] - FysY[0]
+    grad_Z = FzsZ[-1] - FzsZ[0]
+    gradient = b * (grad_X + grad_Y + grad_Z)
+    
+    min_torque = c*torch.sum(torque**2,dim=[1,2])
+
+    force = torch.stack([force_x, force_y, force_z],dim=1)
+    alpha = force / norms #should be less than 0
+    alpha = alpha.real
+    force_neg = d* torch.sum(torch.maximum(torch.zeros_like(alpha), alpha)**2)
+
+    greater_weight = e*(weight - torch.sum(force_z) ).unsqueeze_(0)
+    
+
+    return balance + gradient + min_torque + force_neg + greater_weight
