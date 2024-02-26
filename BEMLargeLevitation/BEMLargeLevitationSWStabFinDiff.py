@@ -125,7 +125,7 @@ if __name__ == "__main__":
         "loss_params":{
             "norms":norms[:,:,mask.squeeze()],
             # 'weights':[40,5,1,50000] 
-            'weights':[20,15,1,0,1e-2] 
+            'weights':[20,15,1,0,1e-1] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -227,7 +227,7 @@ if __name__ == "__main__":
     norms = get_normals_as_points(ball)
     # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
     # force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
-    force_quiver_3d(centres[:,:,mask], force_x, force_y, force_z, scale=200)
+    force_quiver_3d(centres[:,:,mask], force_x, force_y, force_z, scale=100)
 
 
     plt.show()
