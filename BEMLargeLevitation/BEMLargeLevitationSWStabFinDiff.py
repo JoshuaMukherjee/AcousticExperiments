@@ -125,7 +125,7 @@ if __name__ == "__main__":
         "loss_params":{
             "norms":norms[:,:,mask.squeeze()],
             # 'weights':[40,5,1,50000] 
-            'weights':[20,15,1,0,1e-1] 
+            'weights':[20,10,1,0,1e-1] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -281,15 +281,17 @@ if __name__ == "__main__":
         Fzs = [f.cpu().detach().numpy() + weight for f in Fzs]
         
 
-        xticklabs = [-1* diff, 0 , diff]
-        xticks = [0, steps/2 , steps]
+        # xticklabs = [-1* diff, 0 , diff]
+        # xticks = [0, steps/2 , steps]
+
+        xticks = torch.linspace(-1*diff, diff, steps+1)
         
         plt.subplot(3,1,i+1)
-        plt.plot(Fxs, label="$F_x$")
-        plt.plot(Fys, label="$F_y$")
-        plt.plot(Fzs, label="$F_z-mg$")
-        plt.xlabel("$\Delta$" + labs[i] + " (mm)")
-        plt.xticks(xticks, xticklabs)
+        plt.plot(xticks,Fxs, label="$F_x$")
+        plt.plot(xticks,Fys, label="$F_y$")
+        plt.plot(xticks,Fzs, label="$F_z-mg$")
+        plt.xlabel("$\Delta$" + labs[i] + " (m)")
+        # plt.xticks(xticks, xticklabs)
         plt.ylim(ytickmin,ytickmax)
         plt.ylabel("Force (N)")
         if i == 0: plt.legend()
