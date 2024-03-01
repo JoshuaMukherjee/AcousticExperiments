@@ -2,10 +2,10 @@ from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
-from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs
+from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs, device, DTYPE
 from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
 from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d
-from acoustools.Solvers import gradient_descent_solver
+from acoustools.Solvers import gradient_descent_solver, wgs_wrapper
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Force import force_mesh, get_force_mesh_along_axis,torque_mesh
 import acoustools.Constants as Constants
@@ -151,12 +151,22 @@ if __name__ == "__main__":
     # scheduler=scheduler, scheduler_args=scheduler_args    
 
     '''
+    Initialise with WGS below COM - ignore all scattering etc as just a starting point
+    '''
+    
+    p0 = (centre_of_mass[:,0,:].cpu().detach().item(),centre_of_mass[:,1,:].cpu().detach().item(),centre_of_mass[:,2,:].cpu().detach().item()+100)
+    p1 = (centre_of_mass[:,0,:].cpu().detach().item(),centre_of_mass[:,1,:].cpu().detach().item(),-100)
+    cell = scatterer.find_cells_along_line(p0,p1,tol=1e-7)[0]
+    below_COM = torch.tensor(scatterer.coordinates[scatterer.cells[cell][0]]).unsqueeze_(0).unsqueeze_(2).to(device).to(DTYPE)
+
+    x_start = wgs_wrapper(below_COM,iter=5)
+
+    '''
     Phase retrieval
     '''
 
-
     x = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
-                                iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args)
+                                iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start)
     
 
     
