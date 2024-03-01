@@ -8,6 +8,7 @@ if __name__ == '__main__':
     import matplotlib.pyplot as plt
 
     import torch
+    import numpy as np
 
     board = TRANSDUCERS
 
@@ -88,6 +89,10 @@ if __name__ == '__main__':
 
         amp_squeeze = amp_filtered.squeeze()
         amp_squeeze = amp_squeeze.T
+        if i == 1:
+            amp_squeeze = np.flipud(amp_squeeze)
+        elif i == 2:
+            amp_squeeze = np.fliplr(amp_squeeze)
 
         ax = fig.add_subplot(2,3,3+i+1)
         im = ax.matshow(amp_squeeze,cmap='hot',vmax=5000)
