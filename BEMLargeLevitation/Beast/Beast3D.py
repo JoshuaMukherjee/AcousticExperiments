@@ -34,7 +34,7 @@ if __name__ == '__main__':
 
     amp, phase = read_beast_file(fileName, mode, amp_setting, mic_gain_correction)
     amp_filtered = amp[min_x:min_x+step_x+1, min_y:min_y+step_y+1, min_z:min_z+step_z+1]
-
+    amp_filtered = amp_filtered.transpose((1,0,2))
     THRESHOLD = 1500
     amp_filtered[amp_filtered < THRESHOLD] = np.nan
 
@@ -53,7 +53,7 @@ if __name__ == '__main__':
     fig.colorbar(img)
 
 
-    SHOW = True
+    SHOW = False
 
     if SHOW:
         plt.show()
