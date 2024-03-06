@@ -38,10 +38,10 @@ if __name__ == '__main__':
     layer = 0
 
     def traverse(layer):
-            im = ax.matshow(amp_filtered[:,:,layer].T,cmap='hot',vmax=5000) #z=0 is the bottom
-            ax.set_title("XY planae, Z="+str(layer))
+            im = ax.matshow(amp_filtered[:,layer,:].T,cmap='hot',vmax=5000) #z=0 is the bottom
+            ax.set_title("XZ planae, Y="+str(layer))
             
-    rot_animation = animation.FuncAnimation(fig, traverse, frames=np.arange(0, step_z), interval=500)
-    rot_animation.save('Traverse.gif', dpi=80, writer='imagemagick')
+    rot_animation = animation.FuncAnimation(fig, traverse, frames=np.arange(0, step_y), interval=500)
+    rot_animation.save('Traverse_XZ.gif', dpi=80, writer='imagemagick')
 
 

@@ -36,7 +36,7 @@ if __name__ == '__main__':
     start = -0.02
     d = 0.04
     
-    xz_dy = 0
+    xz_dy = -0.007
     xy_dz = -0.00175
     yz_dx = 0
 

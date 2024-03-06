@@ -53,7 +53,7 @@ if __name__ == '__main__':
     fig.colorbar(img)
 
 
-    SHOW = False
+    SHOW = True
 
     if SHOW:
         plt.show()
