@@ -336,6 +336,113 @@ def BEM_levitation_objective_subsample_stability_fin_diff(transducer_phases, poi
     
     return loss_function(force_x, force_y, force_z, weight, torque, **loss_params)
 
+def BEM_levitation_objective_subsample_stability_fin_diff_single_element(transducer_phases, points, board, targets=None, **objective_params):
+    ''' Expects an element of objective_params named:\\
+    `norms` containing all normals in the same order as points \\
+    `areas` containing the areas for the cell containing each point\\
+    `scatterer` containing the mesh to optimise around\\
+    `indexes` containing subsample to use
+    `diff` containing difference to use in fin diffs
+    `scatterer_elements` contains list of [object to levitate, walls]
+    '''
+
+
+    scatterer = objective_params["scatterer"]
+    norms = objective_params["norms"]
+    areas = objective_params["areas"]
+    indexes = objective_params["indexes"]
+    diff = objective_params["diff"]
+    scatter_elems = objective_params["scatterer_elements"]
+
+    loss_function = objective_params["loss"]
+    
+    if "loss_params" in objective_params:
+        loss_params = objective_params["loss_params"]
+    else:
+        loss_params = {} 
+
+    params = {
+        "scatterer":scatterer
+    }
+
+    centre_of_mass = get_centre_of_mass_as_points(scatterer)
+
+    if "Hgrad" not in objective_params:
+        Hx, Hy, Hz = get_cache_or_compute_H_gradients(None, transducers=board, **{"scatterer":scatterer })
+    else:
+        Hx, Hy, Hz = objective_params["Hgrad"]
+    
+    if "H" not in objective_params:
+        H = get_cache_or_compute_H(scatterer,board)
+    else:
+        H = objective_params["H"]
+
+    # E = compute_E(scatterer,points,board, H=H)
+    force = force_mesh(transducer_phases,points,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    # force = force_mesh(transducer_phases,points,norms,areas,board,BEM_forward_model_grad,params,F=E)
+    torque = torque_mesh(transducer_phases,points,norms,areas,centre_of_mass,board,force=force)
+   
+    startX = torch.tensor([[-1*diff],[0],[0]]) 
+    endX = torch.tensor([[diff],[0],[0]]) 
+
+    startY = torch.tensor([[0],[-1*diff],[0]])
+    endY = torch.tensor([[0],[diff],[0]])
+
+    startZ = torch.tensor([[0],[0],[-1*diff]])
+    endZ = torch.tensor([[0],[0],[diff]])
+    
+    ball = scatter_elems[0]
+
+    if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX/1000, endX/1000, [ball.clone()], board, steps=1, use_cache=True, print_lines=False)
+    else:
+        Hs = objective_params["Hss"][0]
+        Hxs = objective_params["Hxss"][0]
+        Hys = objective_params["Hyss"][0]
+        Hzs = objective_params["Hzss"][0]
+
+    FxsX, _, _ = get_force_mesh_along_axis(startX/1000, endX/1000, transducer_phases, [ball.clone()], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+    
+    if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY/1000, endY/1000, [ball.clone()], board, steps=1, use_cache=True, print_lines=False)
+    else:
+        Hs = objective_params["Hss"][1]
+        Hxs = objective_params["Hxss"][1]
+        Hys = objective_params["Hyss"][1]
+        Hzs = objective_params["Hzss"][1]
+
+    _, FysY, _ = get_force_mesh_along_axis(startY/1000, endY/1000, transducer_phases, [ball.clone()], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+    
+    if "Hss" not in objective_params or "Hxss" not in objective_params or "Hyss" not in objective_params or "Hzss" not in objective_params:
+        Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ/1000, endZ/1000, [ball.clone()], board, steps=1, use_cache=True, print_lines=False)
+    else:
+        Hs = objective_params["Hss"][2]
+        Hxs = objective_params["Hxss"][2]
+        Hys = objective_params["Hyss"][2]
+        Hzs = objective_params["Hzss"][2]
+
+    _, _, FzsZ = get_force_mesh_along_axis(startZ/1000, endZ/1000, transducer_phases, [ball.clone()], board,indexes,steps=1, use_cache=True, print_lines=False, Hs=Hs, Hxs = Hxs, Hys=Hys, Hzs=Hzs)
+
+
+
+    if "weight" in objective_params:
+        weight = objective_params["weight"]
+    else:
+        weight = -1*get_weight(scatterer)
+
+    force_x = force[:,0,:][:,indexes]
+    force_y = force[:,1,:][:,indexes]
+    force_z = force[:,2,:][:,indexes]
+    torque = torque[:,:,indexes]
+
+    loss_params["FxsX"]=FxsX
+    loss_params["FysY"]=FysY
+    loss_params["FzsZ"]=FzsZ
+
+    
+    return loss_function(force_x, force_y, force_z, weight, torque, **loss_params)
+
+
 def sum_forces_torque(force_x, force_y, force_z, weight, torque, **params):
 
     return (torch.sum(force_z,dim=1) - weight)**2  + torch.sum(torque,dim=[1,2])**2 + torch.sum(force_x,dim=1)**2 + torch.sum(force_y,dim=1)**2
@@ -723,6 +830,37 @@ def levitation_balance_grad_torque_direction_greater(force_x, force_y, force_z, 
     net_x = torch.sum(force_x)**2
     net_y = torch.sum(force_y)**2
     net_z = ((torch.sum(force_z) + weight)**2).unsqueeze_(0)
+    balance = a* (net_x + net_y + net_z)
+
+    grad_X = FxsX[-1] - FxsX[0]
+    grad_Y = FysY[-1] - FysY[0]
+    grad_Z = FzsZ[-1] - FzsZ[0]
+    gradient = b * (grad_X + grad_Y + grad_Z)
+    
+    min_torque = c*torch.sum(torque**2,dim=[1,2])
+
+    force = torch.stack([force_x, force_y, force_z],dim=1)
+    alpha = force / norms #should be less than 0
+    alpha = alpha.real
+    force_neg = d* torch.sum(torch.maximum(torch.zeros_like(alpha), alpha)**2)
+
+    greater_weight = e*(weight - torch.sum(force_z) ).unsqueeze_(0)
+    
+
+    return balance + gradient + min_torque + force_neg + greater_weight
+
+
+def levitation_balance_grad_torque_direction_greater_sideways(force_x, force_y, force_z, weight, torque, **params):
+    a,b,c,d,e = params["weights"]
+    norms = params['norms']
+
+    FxsX = params["FxsX"]
+    FysY = params["FysY"]
+    FzsZ = params["FzsZ"]
+
+    net_z = torch.sum(force_x)**2
+    net_y = torch.sum(force_y)**2
+    net_x = ((torch.sum(force_z) - weight)**2).unsqueeze_(0)
     balance = a* (net_x + net_y + net_z)
 
     grad_X = FxsX[-1] - FxsX[0]
