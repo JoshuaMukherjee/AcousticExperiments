@@ -9,7 +9,7 @@ if __name__ == '__main__':
     from acoustools.Utilities import TRANSDUCERS
 
 
-    loss,results = pickle.load(open('Media/SavedResults/SphereLev.pth','rb'))
+    loss,results = pickle.load(open('Media/SavedResults/SphereLevSideways.pth','rb'))
 
     fig = plt.figure()
     loss_ax = fig.add_subplot(1,2,1)

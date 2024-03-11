@@ -1,4 +1,4 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff_single_element, levitation_balance_grad_torque_direction, levitation_balance_grad_torque_direction_greater_sideways, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_grad_torque_sideways, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
@@ -23,19 +23,23 @@ if __name__ == "__main__":
     diff = 0.0025
     board = TRANSDUCERS
 
-
     '''
     Load meshes and compute values 
     '''
+ 
+    wall_paths = ["Media/flat-lam1.stl","Media/flat-lam1.stl"]
+    walls = load_multiple_scatterers(wall_paths,dxs=[-0.175/2,0.175/2],rotys=[90,-90]) #Make mesh at 0,0,0
+    walls.scale((1,19/12,19/12),reset=True,origin =False)
+    walls.filename = scatterer_file_name(walls)
+    print(walls)
+
 
     ball_path = "Media/Sphere-lam2.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
     scale_to_diameter(ball,0.02)
     # scale_to_diameter(ball, Constants.R*2)
 
-    # scatterer = merge_scatterers(ball, walls)
-
-    scatterer = ball
+    scatterer = merge_scatterers(ball, walls)
 
     # vedo.show(scatterer,axes=1)
     # exit()
@@ -83,7 +87,7 @@ if __name__ == "__main__":
     SCALE = 10
     startX = torch.tensor([[-1*diff],[0],[0]])/SCALE
     endX = torch.tensor([[diff],[0],[0]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone()], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -91,7 +95,7 @@ if __name__ == "__main__":
 
     startY = torch.tensor([[0],[-1*diff],[0]])/SCALE
     endY = torch.tensor([[0],[diff],[0]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone()], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -99,7 +103,7 @@ if __name__ == "__main__":
 
     startZ = torch.tensor([[0],[0],[-1*diff]])/SCALE
     endZ = torch.tensor([[0],[0],[diff]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone()], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -118,14 +122,15 @@ if __name__ == "__main__":
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
         # "loss":levitation_balance_grad_torque_direction,
-        "loss":levitation_balance_grad_torque_direction_greater_sideways,
+        "loss":levitation_balance_grad_torque_sideways,
         "loss_params":{
+            "norms":norms[:,:,mask.squeeze()],
             # 'weights':[40,5,1,50000] 
-            'weights':[10,1,1,0,1e-1] 
+            'weights':[100,1,1] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
-        "scatterer_elements":[ball],
+        "scatterer_elements":[ball,walls],
         "Hss":Hss,
         "Hxss":Hxss,
         "Hyss":Hyss,
@@ -151,17 +156,9 @@ if __name__ == "__main__":
     '''
     
     p0 = (centre_of_mass[:,0,:].cpu().detach().item(),centre_of_mass[:,1,:].cpu().detach().item(),centre_of_mass[:,2,:].cpu().detach().item())
-    p1 = (centre_of_mass[:,0,:].cpu().detach().item(),centre_of_mass[:,1,:].cpu().detach().item(),-100)
+    p1 = (-100,centre_of_mass[:,1,:].cpu().detach().item(),centre_of_mass[:,2,:].cpu().detach().item())
     cell = scatterer.find_cells_along_line(p0,p1,tol=1e-7)[0]
     below_COM = torch.tensor(scatterer.coordinates[scatterer.cells[cell][0]]).unsqueeze_(0).unsqueeze_(2).to(device).to(DTYPE)
-    
-    below_COM_1 = below_COM.clone()
-    below_COM_1[:,0,:] -= 0.005
-
-    below_COM_2 = below_COM.clone()
-    below_COM_2[:,0,:] += 0.005
-
-    below_COM = torch.cat([below_COM_1, below_COM_2], dim=2)
 
     x_start = wgs_wrapper(below_COM,iter=5)
 
@@ -171,11 +168,11 @@ if __name__ == "__main__":
 
     save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100,150,200]]
     # save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100]]
-    x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff_single_element,constrains=constrain_phase_only,objective_params=params,log=True,\
+    x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                 iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
     
     print('Logging Reuslts...')
-    pickle.dump((loss,result),open('Media/SavedResults/SphereLev.pth','wb'))
+    pickle.dump((loss,result),open('Media/SavedResults/SphereLevSideways.pth','wb'))
 
     
     force = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
@@ -205,24 +202,24 @@ if __name__ == "__main__":
     print("File Written")
     # exit()
 
-    A = torch.tensor((0,-0.09, 0.09))
-    B = torch.tensor((0,0.09, 0.09))
-    C = torch.tensor((0,-0.09, -0.09))
-    normal = (1,0,0)
-    origin = (0,0,0)
-
-    # A = torch.tensor((-0.09,0, 0.09))
-    # B = torch.tensor((0.09,0, 0.09))
-    # C = torch.tensor((-0.09,0, -0.09))
-    # normal = (0,1,0)
+    # A = torch.tensor((0,-0.09, 0.09))
+    # B = torch.tensor((0,0.09, 0.09))
+    # C = torch.tensor((0,-0.09, -0.09))
+    # normal = (1,0,0)
     # origin = (0,0,0)
+
+    A = torch.tensor((-0.09,0, 0.09))
+    B = torch.tensor((0.09,0, 0.09))
+    C = torch.tensor((-0.09,0, -0.09))
+    normal = (0,1,0)
+    origin = (0,0,0)
 
     # A = torch.tensor((-0.07, 0.07,0))
     # B = torch.tensor((0.07, 0.07,0))
     # C = torch.tensor((-0.07, -0.07,0))
     # normal = (0,0,1)
     # origin = (0,0,0)
-    
+
     # A = torch.tensor((-0.09,-0.09, 0.09))
     # B = torch.tensor((0.09,0.09, 0.09))
     # C = torch.tensor((-0.09,-0.09, -0.09))
@@ -230,10 +227,11 @@ if __name__ == "__main__":
     # origin = (0,0,0)
     
 
-    # line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
+    line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
+    line_params_wall = {"scatterer":walls,"origin":origin,"normal":normal}
 
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[None,None],add_line_args=[{},{}],\
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=9000, show=True)
 
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
@@ -242,7 +240,7 @@ if __name__ == "__main__":
     
 
     pad = 0.005
-    # planar = get_plane(scatterer,origin,normal)
+    planar = get_plane(scatterer,origin,normal)
     bounds = ball.bounds()
     xlim=[bounds[0]-pad,bounds[1]+pad]
     ylim=[bounds[2]-pad,bounds[3]+pad]
@@ -270,9 +268,9 @@ if __name__ == "__main__":
     steps = 60
     path = "Media"
     print_lines = False
-    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone()], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
-    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone()], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
-    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone()], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
+    FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
+    FxsY, FysY, FzsY = get_force_mesh_along_axis(startY, endY, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
+    FxsZ, FysZ, FzsZ = get_force_mesh_along_axis(startZ, endZ, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
 
 
     BUFFER_SCALE = 1.2 
