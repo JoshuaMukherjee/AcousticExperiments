@@ -3,3 +3,5 @@ Media/*
 */__pycache__/*
 */Paths/*
 *.csv
+*.png
+*.gif
