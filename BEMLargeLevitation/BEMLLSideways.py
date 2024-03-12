@@ -287,9 +287,9 @@ if __name__ == "__main__":
 
     labs = ["X", "Y", "Z"]
     for i,(Fxs, Fys, Fzs) in enumerate([[FxsX, FysX, FzsX], [FxsY, FysY, FzsY], [FxsZ, FysZ, FzsZ] ]):
-        Fxs = [f.cpu().detach().numpy() for f in Fxs]
+        Fxs = [f.cpu().detach().numpy() + weight for f in Fxs]
         Fys = [f.cpu().detach().numpy() for f in Fys]
-        Fzs = [f.cpu().detach().numpy() + weight for f in Fzs]
+        Fzs = [f.cpu().detach().numpy() for f in Fzs]
         
 
         # xticklabs = [-1* diff, 0 , diff]
@@ -298,9 +298,9 @@ if __name__ == "__main__":
         xticks = torch.linspace(-1*diff, diff, steps+1)
         
         plt.subplot(3,1,i+1)
-        plt.plot(xticks,Fxs, label="$F_x$")
+        plt.plot(xticks,Fxs, label="$F_x-mg$")
         plt.plot(xticks,Fys, label="$F_y$")
-        plt.plot(xticks,Fzs, label="$F_z-mg$")
+        plt.plot(xticks,Fzs, label="$F_z$")
         plt.xlabel("$\Delta$" + labs[i] + " (m)")
         # plt.xticks(xticks, xticklabs)
         plt.ylim(ytickmin,ytickmax)
