@@ -6,7 +6,7 @@ import matplotlib.animation as animation
 import torch
 
 from acoustools.Solvers import wgs
-from acoustools.Utilities import propagate_abs, DTYPE, add_lev_sig
+from acoustools.Utilities import propagate_abs, DTYPE, add_lev_sig, device
 from acoustools.Visualiser import Visualise_single, get_point_pos
 
 session = fastf1.get_session(2023, 10, 'Q')
@@ -100,7 +100,7 @@ Zs = torch.tensor(Zs)
 points = []
 
 for i in range(N):
-    points.append(torch.stack([Xs[i],Ys[i],Zs[i]]).unsqueeze(0).unsqueeze(2).to(DTYPE))
+    points.append(torch.stack([Xs[i],Ys[i],Zs[i]]).unsqueeze(0).unsqueeze(2).to(DTYPE).to(device))
 
 
 
