@@ -106,12 +106,12 @@ print(Xs[0],0,Zs[0])
 
 
 try:
-    lev = LevitatorController()
+    lev = LevitatorController(ids=(73,53))
+    lev.set_frame_rate(1)
     lev.levitate(activations[0])
     input()
     print('Moving...')
     lev.levitate(activations)
-        # sleep(0.06) #0.6s => ~1:23 lap (Pole: 1:28), 1286 steps, THRESHOLD = 0.0001
 except KeyboardInterrupt:
     print('Stopped')
 finally:
