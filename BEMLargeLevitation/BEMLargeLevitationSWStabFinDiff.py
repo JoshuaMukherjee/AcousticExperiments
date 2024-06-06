@@ -5,7 +5,7 @@ from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_po
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs, device, DTYPE
 from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
 from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d
-from acoustools.Solvers import gradient_descent_solver, wgs_wrapper
+from acoustools.Solvers import gradient_descent_solver, wgs
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Force import force_mesh, get_force_mesh_along_axis,torque_mesh
 import acoustools.Constants as Constants
@@ -122,11 +122,11 @@ if __name__ == "__main__":
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
         # "loss":levitation_balance_grad_torque_direction,
-        "loss":levitation_balance_grad_torque_direction_greater,
+        "loss":levitation_balance_grad_torque_direction,
         "loss_params":{
             "norms":norms[:,:,mask.squeeze()],
             # 'weights':[40,5,1,50000] 
-            'weights':[10,10,1,0,1e-1] 
+            'weights':[10,10,1,1e-1] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -168,7 +168,7 @@ if __name__ == "__main__":
 
     below_COM = torch.cat([below_COM_1, below_COM_2], dim=2)
 
-    x_start = wgs_wrapper(below_COM,iter=5)
+    x_start = wgs(below_COM,iter=5)
 
     '''
     Phase retrieval
