@@ -30,7 +30,6 @@ def branch_mesh(mesh:trimesh.Trimesh, size:float=1):
         b_ind = np.where(np.array(top_face)  == b)
 
 
-
         face_1 = [a,face[a_ind].item(),b]
         face_2 = [face[a_ind].item(),face[b_ind].item(),b]
         new_faces.append(face_1)
