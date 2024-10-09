@@ -1,10 +1,10 @@
 from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_grad_torque_direction_greater, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
-      get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name
+      get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name, get_edge_data
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs, device, DTYPE
 from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
-from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d
+from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d, Visualise_mesh
 from acoustools.Solvers import gradient_descent_solver, wgs
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Force import force_mesh, get_force_mesh_along_axis,torque_mesh
@@ -27,16 +27,20 @@ if __name__ == "__main__":
     Load meshes and compute values 
     '''
  
-    wall_paths = ["Media/flat-lam1.stl","Media/flat-lam1.stl"]
-    walls = load_multiple_scatterers(wall_paths,dxs=[-0.175/2,0.175/2],rotys=[90,-90]) #Make mesh at 0,0,0
-    walls.scale((1,19/12,19/12),reset=True,origin =False)
+    wall_paths = ["Media/flat-lam2.stl","Media/flat-lam2.stl"]
+    walls = load_multiple_scatterers(wall_paths,dxs=[-0.198/2,0.198/2],rotys=[90,-90]) #Make mesh at 0,0,0
+    walls.scale((1,19.3/12,22.5/12),reset=True,origin =False)
+    # print(walls)
     walls.filename = scatterer_file_name(walls)
-    print(walls)
+    # print(walls)
+    get_edge_data(walls)
+    
 
 
-    ball_path = "Media/Sphere-lam2.stl"
+    ball_path = "Media/Sphere-lam1.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
     scale_to_diameter(ball,0.02)
+    get_edge_data(ball)
     # scale_to_diameter(ball, Constants.R*2)
 
     scatterer = merge_scatterers(ball, walls)
@@ -59,7 +63,7 @@ if __name__ == "__main__":
     
     # scale_to_diameter(scatterer,0.04)
 
-    print(scatterer)
+    # print(scatterer)
 
     centres = get_centres_as_points(scatterer)
     centre_of_mass = get_centre_of_mass_as_points(scatterer)
@@ -176,12 +180,20 @@ if __name__ == "__main__":
 
     save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100,150,200]]
     # save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100]]
-    x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
-                                iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
-    
-    print('Logging Reuslts...')
-    pickle.dump((loss,result),open('Media/SavedResults/SphereLev.pth','wb'))
+    compute= True
+    if compute:
+        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
+                                    iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
+        
+        print('Logging Reuslts...')
+        pickle.dump((loss,result),open('Media/SavedResults/SphereLev.pth','wb'))
 
+        print("Writing Phases...")
+        # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
+        pickle.dump(x, open('./BEMLargeLevitation/Paths/holo.pth','wb'))
+        print("File Written")
+    else:
+        x = pickle.load(open('./BEMLargeLevitation/Paths/holo.pth','rb'))
     
     force = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
     torque = torque_mesh(x,centres,norms,areas,centre_of_mass,board,grad_function=grad_H,grad_function_args=params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
@@ -205,9 +217,7 @@ if __name__ == "__main__":
     print(torch.sum(torch.abs(force_y)).item(), torch.sum(force_y).item(), torch.sum(torque_y).item())
     print(torch.sum(torch.abs(force_z)).item(), torch.sum(force_z).item() + params["weight"], torch.sum(torque_z).item())
     
-    print("Writing Phases...")
-    write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
-    print("File Written")
+   
     # exit()
 
     # A = torch.tensor((0,-0.09, 0.09))
@@ -216,9 +226,9 @@ if __name__ == "__main__":
     # normal = (1,0,0)
     # origin = (0,0,0)
 
-    A = torch.tensor((-0.09,0, 0.09))
-    B = torch.tensor((0.09,0, 0.09))
-    C = torch.tensor((-0.09,0, -0.09))
+    A = torch.tensor((-0.09,0, 0.09)).to(device)
+    B = torch.tensor((0.09,0, 0.09)).to(device)
+    C = torch.tensor((-0.09,0, -0.09)).to(device)
     normal = (0,1,0)
     origin = (0,0,0)
 
@@ -238,7 +248,10 @@ if __name__ == "__main__":
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
     # exit()
-   
+
+    
+    Visualise_mesh(scatterer,propagate_BEM_pressure(x,centres,scatterer, board=board))
+    # exit()
     
 
     pad = 0.005
