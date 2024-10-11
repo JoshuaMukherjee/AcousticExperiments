@@ -1,4 +1,5 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_grad_torque_direction_greater, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_grad_torque_direction_greater, \
+    levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater, BEM_levitation_objective_subsample_stability_fin_diff_jacobian
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name, get_edge_data
@@ -182,7 +183,7 @@ if __name__ == "__main__":
     # save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100]]
     compute= True
     if compute:
-        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
+        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff_jacobian,constrains=constrain_phase_only,objective_params=params,log=True,\
                                     iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
         
         print('Logging Reuslts...')
@@ -279,7 +280,7 @@ if __name__ == "__main__":
     
     # exit()
     
-    steps = 60
+    steps = 10
     path = "Media"
     print_lines = False
     FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
