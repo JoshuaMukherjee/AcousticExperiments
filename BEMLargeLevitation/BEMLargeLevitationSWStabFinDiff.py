@@ -1,10 +1,12 @@
-from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction, levitation_balance_grad_torque_direction_greater, levitation_balance_mag_grad_torque, levitation_balance_mag_grad_torque_gerater
+from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability_fin_diff, levitation_balance_grad_torque_direction,\
+      levitation_balance_grad_torque_direction_greater, levitation_balance_mag_grad_torque,\
+          levitation_balance_mag_grad_torque_gerater, levitation_big_f_grad
 
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name, get_edge_data
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs, device, DTYPE
 from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
-from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d, Visualise_mesh
+from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d, Visualise_mesh, ABC
 from acoustools.Solvers import gradient_descent_solver, wgs
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Force import force_mesh, get_force_mesh_along_axis,torque_mesh
@@ -126,11 +128,35 @@ if __name__ == "__main__":
         "Hgrad":(Hx, Hy, Hz),
         "H":H,
         # "loss":levitation_balance_grad_torque_direction,
+        "loss":levitation_big_f_grad,
+        "loss_params":{
+            "norms":norms[:,:,mask.squeeze()],
+            # 'weights':[40,5,1,50000] 
+            'weights':[1e4,1] 
+        },
+        "indexes":mask.squeeze_(),
+        "diff":diff,
+        "scatterer_elements":[ball,walls],
+        "Hss":Hss,
+        "Hxss":Hxss,
+        "Hyss":Hyss,
+        "Hzss":Hzss
+    }
+
+    params_stage_2 = {
+        "scatterer":scatterer,
+        "norms":norms,
+        "areas":areas,
+        "weight":weight,
+        # "weight":-1*0.00100530964,
+        "Hgrad":(Hx, Hy, Hz),
+        "H":H,
+        # "loss":levitation_balance_grad_torque_direction,
         "loss":levitation_balance_grad_torque_direction,
         "loss_params":{
             "norms":norms[:,:,mask.squeeze()],
             # 'weights':[40,5,1,50000] 
-            'weights':[10,10,1,1e-1] 
+            'weights':[3.5e3,1,0,0] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -142,9 +168,9 @@ if __name__ == "__main__":
     }
 
 
-    BASE_LR = 1e-2
-    MAX_LR = 1e-1
-    EPOCHS = 200
+    BASE_LR = 1e-1
+    MAX_LR = 1
+    EPOCHS = 100
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
@@ -182,8 +208,11 @@ if __name__ == "__main__":
     # save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100]]
     compute= True
     if compute:
-        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
+        x1, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                     iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
+        
+        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params_stage_2,log=True,\
+                                    iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x1, return_loss=True, save_set_n=save_set_n )
         
         print('Logging Reuslts...')
         pickle.dump((loss,result),open('Media/SavedResults/SphereLev.pth','wb'))
@@ -226,9 +255,7 @@ if __name__ == "__main__":
     # normal = (1,0,0)
     # origin = (0,0,0)
 
-    A = torch.tensor((-0.09,0, 0.09)).to(device)
-    B = torch.tensor((0.09,0, 0.09)).to(device)
-    C = torch.tensor((-0.09,0, -0.09)).to(device)
+    A,B,C = ABC(0.04)
     normal = (0,1,0)
     origin = (0,0,0)
 
@@ -245,12 +272,12 @@ if __name__ == "__main__":
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=6000, show=True)
 
-    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_abs], add_lines_functions=[get_lines_from_plane,None],add_line_args=[line_params,{}],\
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{}],vmax=9000, show=True)
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure],
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}],vmax=9000, show=True, res=(200,200))
     # exit()
 
     
-    Visualise_mesh(scatterer,propagate_BEM_pressure(x,centres,scatterer, board=board))
+    # Visualise_mesh(scatterer,propagate_BEM_pressure(x,centres,scatterer, board=board))
     # exit()
     
 
@@ -279,7 +306,7 @@ if __name__ == "__main__":
     
     # exit()
     
-    steps = 60
+    steps = 10
     path = "Media"
     print_lines = False
     FxsX, FysX, FzsX = get_force_mesh_along_axis(startX, endX, x, [ball.clone(),walls], board,mask,steps=steps, use_cache=True, print_lines=print_lines,path=path)
