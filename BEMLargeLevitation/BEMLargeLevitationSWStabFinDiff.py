@@ -42,6 +42,7 @@ if __name__ == "__main__":
     ball_path = "Media/Sphere-lam2.stl"
     ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
     scale_to_diameter(ball,0.02)
+    
     get_edge_data(ball)
     # scale_to_diameter(ball, Constants.R*2)
 
@@ -156,7 +157,7 @@ if __name__ == "__main__":
         "loss_params":{
             "norms":norms[:,:,mask.squeeze()],
             # 'weights':[40,5,1,50000] 
-            'weights':[3.5e3,1,0,0] 
+            'weights':[5e2,3,0,0] 
         },
         "indexes":mask.squeeze_(),
         "diff":diff,
@@ -168,14 +169,26 @@ if __name__ == "__main__":
     }
 
 
-    BASE_LR = 1e-1
-    MAX_LR = 1
-    EPOCHS = 100
+    BASE_LR = 1e2
+    MAX_LR = 1e3
+    EPOCHS = 50
 
     scheduler = torch.optim.lr_scheduler.CyclicLR
     scheduler_args = {
         "max_lr":MAX_LR,
         "base_lr":BASE_LR,
+        "cycle_momentum":False,
+        "step_size_up":25
+    }
+
+
+    BASE_LR2 = 1e-1
+    MAX_LR2 = 1
+    EPOCHS2 = 100
+
+    scheduler_args2 = {
+        "max_lr":MAX_LR2,
+        "base_lr":BASE_LR2,
         "cycle_momentum":False,
         "step_size_up":25
     }
@@ -206,13 +219,16 @@ if __name__ == "__main__":
 
     save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100,150,200]]
     # save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100]]
-    compute= True
+    compute= False
     if compute:
         x1, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
-                                    iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
+                                    iters=EPOCHS,lr=BASE_LR, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
         
-        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params_stage_2,log=True,\
-                                    iters=EPOCHS,lr=BASE_LR, optimiser=torch.optim.Adam, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x1, return_loss=True, save_set_n=save_set_n )
+        x2, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params_stage_2,log=True,\
+                                    iters=EPOCHS,lr=BASE_LR2, board=board,scheduler=scheduler, scheduler_args=scheduler_args2, start=x1, return_loss=True, save_set_n=save_set_n )
+        
+        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
+                                    iters=5,lr=1e-2, board=board, start=x2, return_loss=True, save_set_n=save_set_n )
         
         print('Logging Reuslts...')
         pickle.dump((loss,result),open('Media/SavedResults/SphereLev.pth','wb'))
@@ -249,9 +265,9 @@ if __name__ == "__main__":
    
     # exit()
 
-    # A = torch.tensor((0,-0.09, 0.09))
-    # B = torch.tensor((0,0.09, 0.09))
-    # C = torch.tensor((0,-0.09, -0.09))
+    # A = torch.tensor((0,-0.09, 0.09)).to(device)
+    # B = torch.tensor((0,0.09, 0.09)).to(device)
+    # C = torch.tensor((0,-0.09, -0.09)).to(device)
     # normal = (1,0,0)
     # origin = (0,0,0)
 
@@ -271,14 +287,14 @@ if __name__ == "__main__":
 
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure], add_lines_functions=[get_lines_from_plane,get_lines_from_plane],add_line_args=[line_params,line_params_wall],\
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=6000, show=True)
-
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure],
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}],vmax=9000, show=True, res=(200,200))
+# 
+    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure, propagate_BEM_pressure],
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}], show=True, res=(200,200))
     # exit()
 
-    
-    # Visualise_mesh(scatterer,propagate_BEM_pressure(x,centres,scatterer, board=board))
-    # exit()
+
+    Visualise_mesh(scatterer,torch.abs(H@x), clamp=True, vmax=9000, vmin=0)
+    exit()
     
 
     pad = 0.005
