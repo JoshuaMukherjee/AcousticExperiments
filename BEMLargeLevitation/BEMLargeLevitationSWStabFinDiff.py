@@ -5,7 +5,7 @@ from BEMLevitationObjectives import BEM_levitation_objective_subsample_stability
 from acoustools.Mesh import load_scatterer, scale_to_diameter, get_centres_as_points, get_normals_as_points, get_areas,\
       get_centre_of_mass_as_points, get_weight, load_multiple_scatterers, merge_scatterers, get_lines_from_plane,get_plane, scatterer_file_name, get_edge_data
 from acoustools.Utilities import TRANSDUCERS, write_to_file, get_rows_in, propagate_abs, device, DTYPE
-from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients
+from acoustools.BEM import grad_H, get_cache_or_compute_H_gradients, get_cache_or_compute_H,propagate_BEM_pressure, get_cache_or_compute_H_2_gradients, compute_G
 from acoustools.Visualiser import Visualise, force_quiver, force_quiver_3d, Visualise_mesh, ABC
 from acoustools.Solvers import gradient_descent_solver, wgs
 from acoustools.Optimise.Constraints import constrain_phase_only
@@ -78,6 +78,8 @@ if __name__ == "__main__":
 
     Hx, Hy, Hz = get_cache_or_compute_H_gradients(scatterer, board,print_lines=True)
     H = get_cache_or_compute_H(scatterer,board,print_lines=True)
+    H_Walls = get_cache_or_compute_H(walls,board,print_lines=True)
+
 
     # indexes = get_indexes_subsample(1700, centres)
  
@@ -271,7 +273,7 @@ if __name__ == "__main__":
     # normal = (1,0,0)
     # origin = (0,0,0)
 
-    A,B,C = ABC(0.04)
+    A,B,C = ABC(0.2)
     normal = (0,1,0)
     origin = (0,0,0)
 
@@ -292,6 +294,13 @@ if __name__ == "__main__":
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}], show=True, res=(200,200))
     # exit()
 
+    def GH(activations, **params):
+        G = compute_G(params['points'], walls).to(torch.complex64)
+        return torch.abs((G@H_Walls)@activations)
+
+    Visualise(A,B,C,x,colour_functions=[ GH, propagate_abs ] ,depth=2, res=(600,600), titles=['GH Contribution', 'F Contribution'])
+
+    exit()
 
     Visualise_mesh(scatterer,torch.abs(H@x), clamp=True, vmax=9000, vmin=0)
     exit()
