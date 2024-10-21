@@ -291,14 +291,17 @@ if __name__ == "__main__":
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}],vmax=6000, show=True)
 # 
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure, propagate_BEM_pressure],
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}], show=True, res=(200,200))
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}], show=True, res=(600,600))
+    
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure],
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}], show=True, res=(600,600))
     # exit()
 
-    def GH(activations, **params):
-        G = compute_G(params['points'], walls).to(torch.complex64)
-        return torch.abs((G@H_Walls)@activations)
+    # def GH(activations, **params):
+    #     G = compute_G(params['points'], walls).to(torch.complex64)
+    #     return torch.abs((G@H_Walls)@activations)
 
-    Visualise(A,B,C,x,colour_functions=[ GH, propagate_abs ] ,depth=2, res=(600,600), titles=['GH Contribution', 'F Contribution'])
+    # Visualise(A,B,C,x,colour_functions=[ GH, propagate_abs ] ,depth=2, res=(600,600), titles=['GH Contribution', 'F Contribution'])
 
     exit()
 
