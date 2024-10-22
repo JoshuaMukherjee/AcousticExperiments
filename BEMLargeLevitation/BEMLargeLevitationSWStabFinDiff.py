@@ -273,7 +273,7 @@ if __name__ == "__main__":
     # normal = (1,0,0)
     # origin = (0,0,0)
 
-    A,B,C = ABC(0.2)
+    A,B,C = ABC(0.02, plane='xy')
     normal = (0,1,0)
     origin = (0,0,0)
 
@@ -293,8 +293,8 @@ if __name__ == "__main__":
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure, propagate_BEM_pressure],
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}], show=True, res=(600,600))
     
-    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure],
-              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}], show=True, res=(600,600))
+    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure],
+            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}], show=True, res=(200,200))
     # exit()
 
     # def GH(activations, **params):
@@ -303,10 +303,11 @@ if __name__ == "__main__":
 
     # Visualise(A,B,C,x,colour_functions=[ GH, propagate_abs ] ,depth=2, res=(600,600), titles=['GH Contribution', 'F Contribution'])
 
+    # exit()
+    H_ball = get_cache_or_compute_H(ball, board)
+    Visualise_mesh(ball,torch.abs(H_ball@x), clamp=True, vmax=4000, vmin=0, show=True)
     exit()
-
-    Visualise_mesh(scatterer,torch.abs(H@x), clamp=True, vmax=9000, vmin=0)
-    exit()
+    
     
 
     pad = 0.005
@@ -318,10 +319,12 @@ if __name__ == "__main__":
     norms = get_normals_as_points(ball)
     # force_quiver(centres[:,:,mask],norms[:,0,:],norms[:,2,:], normal,xlim,ylim,show=False,log=False)
     # force_quiver(centres[:,:,mask],force_x,force_z, normal,xlim,ylim,show=False,log=False)
-    force_quiver_3d(centres[:,:,mask], force_x, force_y, force_z, scale=100)
+    ax = force_quiver_3d(centres[:,:,mask]*1.1, force_x, force_y, force_z, scale=100)
 
 
     plt.show()
+
+    exit()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])
