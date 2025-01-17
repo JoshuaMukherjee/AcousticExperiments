@@ -1,13 +1,14 @@
 from acoustools.Mesh import load_scatterer, get_centres_as_points, scale_to_diameter, get_edge_data, translate, get_normals_as_points, get_areas, load_multiple_scatterers, scatterer_file_name, merge_scatterers
 from acoustools.Visualiser import Visualise_mesh,  Visualise, ABC
 from acoustools.BEM import get_cache_or_compute_H, grad_H, get_cache_or_compute_H_gradients, propagate_BEM_pressure
-from acoustools.Utilities import TOP_BOARD, device, get_rows_in
+from acoustools.Utilities import TOP_BOARD, device, get_rows_in, BOARD_POSITIONS
 from acoustools.Solvers import gradient_descent_solver
 from acoustools.Optimise.Constraints import constrain_phase_only
 from acoustools.Force import force_mesh
 
 
 import vedo, torch
+import pickle
 
 plane = load_scatterer('Media/flat-lam2.stl')
 scale_to_diameter(plane, 0.05)
@@ -18,13 +19,14 @@ get_edge_data(plane)
 centres = get_centres_as_points(plane)
 
 
-THRESHOLD = 0.021
+THRESHOLD = 0.024
 distances = torch.sqrt(torch.sum(centres**2,dim=1))
 idx = (distances.real>THRESHOLD).nonzero()[:,1].flatten()
     
 disk = plane.delete_cells(idx.cpu().numpy()).clean()
-
-translate(disk, dz=-0.1)
+#2.3cm from base
+z_pos = -1*BOARD_POSITIONS + (23/1000)
+translate(disk, dz=z_pos)
 
 wall_paths = ["Media/flat-lam2.stl","Media/flat-lam2.stl"]
 walls = load_multiple_scatterers(wall_paths,dxs=[-0.198/2,0.198/2],rotys=[90,-90]) #Make mesh at 0,0,0
@@ -52,7 +54,7 @@ areas = get_areas(combined)
 centres = get_centres_as_points(combined)
 
 
-EPOCHS = 500
+EPOCHS = 100
 BASE_LR = 1
 MAX_LR = 10
 
@@ -73,19 +75,30 @@ def force_objective(transducer_phases, points, board, targets=None, **objective_
     obj = torch.sum(force_masked[:,2,:]).unsqueeze_(0)
     return (targets - obj)**2
 
-TARGET = -0.01
 
-x = gradient_descent_solver(centres, force_objective,constrains=constrain_phase_only,log=True,\
-                                    iters=EPOCHS,lr=BASE_LR, board=board,scheduler=scheduler, scheduler_args=scheduler_args,
-                                     targets=torch.tensor([TARGET]).to(device) )
+holos = []
+
+for i in range(20):
+    TARGET = -0.01 + 0.0005*i
+
+    x = gradient_descent_solver(centres, force_objective,constrains=constrain_phase_only,log=False,\
+                                        iters=EPOCHS,lr=BASE_LR, board=board,scheduler=scheduler, scheduler_args=scheduler_args,
+                                        targets=torch.tensor([TARGET]).to(device) )
 
 # Visualise_mesh(disk, torch.abs(H@x))
 
 
-force = force_mesh(x,centres,norms,areas,board,grad_H,grad_params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
-print(torch.sum(force[:,:,mask.squeeze()],dim=2))
+    force = force_mesh(x,centres,norms,areas,board,grad_H,grad_params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
+    f_sum = torch.sum(force[:,:,mask.squeeze()],dim=2)[:,2].item()
+    print(TARGET, f_sum, f_sum*101.97162 )
 
-Visualise_mesh(disk, force[:,2,mask.squeeze()])
+    holos.append(x)
+
+pickle.dump(holos,open('Media/SavedResults/force_tests.pth','wb'))
+
+
+
+# Visualise_mesh(disk, force[:,2,mask.squeeze()])
 
 
 # A,B,C = ABC(0.12)

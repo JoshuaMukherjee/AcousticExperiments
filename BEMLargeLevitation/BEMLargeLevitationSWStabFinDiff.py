@@ -221,17 +221,19 @@ if __name__ == "__main__":
 
     save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100,150,200]]
     # save_set_n = [n-1 for n in [1,5,10,15,20,25,30,35,40,45,50,55,60,65,70,100]]
-    compute= False
+    compute= True
+    loss = []
     if compute:
-        x1, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
+        x1, loss1, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                     iters=EPOCHS,lr=BASE_LR, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
         
-        x2, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params_stage_2,log=True,\
+        x2, loss2, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params_stage_2,log=True,\
                                     iters=EPOCHS,lr=BASE_LR2, board=board,scheduler=scheduler, scheduler_args=scheduler_args2, start=x1, return_loss=True, save_set_n=save_set_n )
         
-        x, loss, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
+        x, loss3, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                     iters=5,lr=1e-2, board=board, start=x2, return_loss=True, save_set_n=save_set_n )
         
+        loss = loss1+loss2+loss3
         print('Logging Reuslts...')
         pickle.dump((loss,result),open('Media/SavedResults/SphereLev.pth','wb'))
 
@@ -273,7 +275,7 @@ if __name__ == "__main__":
     # normal = (1,0,0)
     # origin = (0,0,0)
 
-    A,B,C = ABC(0.02, plane='xy')
+    A,B,C = ABC(0.25, plane='xy')
     normal = (0,1,0)
     origin = (0,0,0)
 
@@ -293,8 +295,8 @@ if __name__ == "__main__":
     # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure, propagate_BEM_pressure],
             #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board},{"board":board,"scatterer":walls}], show=True, res=(600,600))
     
-    # Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure],
-            #   colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}], show=True, res=(200,200))
+    Visualise(A,B,C,x,colour_functions=[propagate_BEM_pressure],
+              colour_function_args=[{"H":H,"scatterer":scatterer,"board":board}], show=True, res=(600,600))
     # exit()
 
     # def GH(activations, **params):
@@ -306,7 +308,7 @@ if __name__ == "__main__":
     # exit()
     H_ball = get_cache_or_compute_H(ball, board)
     Visualise_mesh(ball,torch.abs(H_ball@x), clamp=True, vmax=4000, vmin=0, show=True)
-    exit()
+    # exit()
     
     
 
@@ -324,7 +326,7 @@ if __name__ == "__main__":
 
     plt.show()
 
-    exit()
+    # exit()
     
     startX = torch.tensor([[-1*diff],[0],[0]])
     endX = torch.tensor([[diff],[0],[0]])
