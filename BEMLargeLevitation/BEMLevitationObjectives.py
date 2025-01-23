@@ -920,7 +920,8 @@ def levitation_balance_grad_torque_direction(force_x, force_y, force_z, weight, 
     force = torch.stack([force_x, force_y, force_z],dim=1)
     alpha = force / norms #should be less than 0
     alpha = alpha.real
-    force_neg = d* torch.sum(torch.maximum(torch.zeros_like(alpha), alpha)**2)
+    # force_neg = d* torch.sum(torch.maximum(torch.zeros_like(alpha), alpha)**2)
+    force_neg=0
     
     # print(balance, gradient, min_torque, force_neg)
     return balance + gradient + min_torque + force_neg

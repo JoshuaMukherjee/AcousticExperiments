@@ -39,9 +39,12 @@ if __name__ == "__main__":
     
 
 
-    ball_path = "Media/Sphere-lam2.stl"
-    ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
+    ball_path = "Media/Cube-lam2.stl"
+    # ball = load_scatterer(ball_path,dy=-0.06) #Make mesh at 0,0,0
+    ball = load_scatterer(ball_path) #CUBE Make mesh at 0,0,0
+
     scale_to_diameter(ball,0.02)
+    print(get_centre_of_mass_as_points(ball))
     
     get_edge_data(ball)
     # scale_to_diameter(ball, Constants.R*2)
