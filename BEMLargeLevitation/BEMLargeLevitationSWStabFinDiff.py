@@ -16,9 +16,12 @@ from BEMLevUtils import get_H_for_fin_diffs
 
 import torch, vedo
 import numpy as np
-import pickle
+import pickle, time
 
 import matplotlib.pyplot as plt
+
+USE_CACHE = False
+
 
 if __name__ == "__main__":
 
@@ -28,6 +31,8 @@ if __name__ == "__main__":
     '''
     Load meshes and compute values 
     '''
+
+    start_time = time.time_ns()
  
     wall_paths = ["Media/flat-lam2.stl","Media/flat-lam2.stl"]
     walls = load_multiple_scatterers(wall_paths,dxs=[-0.198/2,0.198/2],rotys=[90,-90]) #Make mesh at 0,0,0
@@ -79,9 +84,19 @@ if __name__ == "__main__":
     areas = get_areas(scatterer)
     areas = areas.expand((1,-1,-1))
 
-    Hx, Hy, Hz = get_cache_or_compute_H_gradients(scatterer, board,print_lines=True)
-    H = get_cache_or_compute_H(scatterer,board,print_lines=True)
-    H_Walls = get_cache_or_compute_H(walls,board,print_lines=True)
+    scatterer_setup_time = time.time_ns()
+
+    Hx, Hy, Hz = get_cache_or_compute_H_gradients(scatterer, board,print_lines=True, use_cache_H_grad=USE_CACHE)
+
+    H_grad_time = time.time_ns()
+
+    H = get_cache_or_compute_H(scatterer,board,print_lines=True, use_cache_H=USE_CACHE)
+
+    H_time = time.time_ns()
+
+    H_Walls = get_cache_or_compute_H(walls,board,print_lines=True, use_cache_H=USE_CACHE)
+
+    H_walls_time = time.time_ns()
 
 
     # indexes = get_indexes_subsample(1700, centres)
@@ -99,7 +114,7 @@ if __name__ == "__main__":
     SCALE = 10
     startX = torch.tensor([[-1*diff],[0],[0]])/SCALE
     endX = torch.tensor([[diff],[0],[0]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startX, endX, [ball.clone(),walls], board, steps=1, use_cache=USE_CACHE, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -107,7 +122,7 @@ if __name__ == "__main__":
 
     startY = torch.tensor([[0],[-1*diff],[0]])/SCALE
     endY = torch.tensor([[0],[diff],[0]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startY, endY, [ball.clone(),walls], board, steps=1, use_cache=USE_CACHE, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
@@ -115,11 +130,13 @@ if __name__ == "__main__":
 
     startZ = torch.tensor([[0],[0],[-1*diff]])/SCALE
     endZ = torch.tensor([[0],[0],[diff]])/SCALE
-    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=True, print_lines=False)
+    Hs, Hxs, Hys, Hzs = get_H_for_fin_diffs(startZ, endZ, [ball.clone(),walls], board, steps=1, use_cache=USE_CACHE, print_lines=False)
     Hss.append(Hs)
     Hxss.append(Hxs)
     Hyss.append(Hys)
     Hzss.append(Hzs)
+
+    H_finite_differences_time = time.time_ns()
     
     '''
     Set parameters for optimisation
@@ -199,6 +216,8 @@ if __name__ == "__main__":
     }
     # scheduler=scheduler, scheduler_args=scheduler_args    
 
+    params_time = time.time_ns()
+
     '''
     Initialise with WGS below COM - ignore all scattering etc as just a starting point
     '''
@@ -218,6 +237,9 @@ if __name__ == "__main__":
 
     x_start = wgs(below_COM,iter=5)
 
+    wgs_time = time.time_ns()
+
+
     '''
     Phase retrieval
     '''
@@ -230,12 +252,18 @@ if __name__ == "__main__":
         x1, loss1, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                     iters=EPOCHS,lr=BASE_LR, board=board,scheduler=scheduler, scheduler_args=scheduler_args, start=x_start, return_loss=True, save_set_n=save_set_n )
         
+        phase_1_time = time.time_ns()
+
         x2, loss2, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params_stage_2,log=True,\
                                     iters=EPOCHS,lr=BASE_LR2, board=board,scheduler=scheduler, scheduler_args=scheduler_args2, start=x1, return_loss=True, save_set_n=save_set_n )
         
+        phase_2_time = time.time_ns()
+
         x, loss3, result = gradient_descent_solver(centres, BEM_levitation_objective_subsample_stability_fin_diff,constrains=constrain_phase_only,objective_params=params,log=True,\
                                     iters=5,lr=1e-2, board=board, start=x2, return_loss=True, save_set_n=save_set_n )
         
+        phase_3_time = time.time_ns()
+
         loss = loss1+loss2+loss3
         print('Logging Reuslts...')
         pickle.dump((loss,result),open('Media/SavedResults/SphereLev.pth','wb'))
@@ -244,8 +272,21 @@ if __name__ == "__main__":
         # write_to_file(x,"./BEMLargeLevitation/Paths/spherelev.csv",1)
         pickle.dump(x, open('./BEMLargeLevitation/Paths/holo.pth','wb'))
         print("File Written")
+
+        save_time = time.time_ns()
     else:
+        phase_1_time = time.time_ns()
+        phase_2_time = time.time_ns()
+        phase_3_time = time.time_ns()
+
         x = pickle.load(open('./BEMLargeLevitation/Paths/holo.pth','rb'))
+        save_time = time.time_ns()
+    
+    time_file = 'BEMLargeLevitation/Times/' + str(time.time_ns()) + '.pth'
+    pickle.dump([start_time,scatterer_setup_time, H_grad_time,H_time,H_walls_time, 
+                 H_finite_differences_time, params_time, wgs_time, phase_1_time, phase_2_time, phase_3_time, save_time], open(time_file, 'wb'))
+    
+    exit()
     
     force = force_mesh(x,centres,norms,areas,board,grad_H,params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
     torque = torque_mesh(x,centres,norms,areas,centre_of_mass,board,grad_function=grad_H,grad_function_args=params,Ax=Hx, Ay=Hy, Az=Hz,F=H)
@@ -257,6 +298,7 @@ if __name__ == "__main__":
     torque_x = torque[:,0,:][:,mask]
     torque_y = torque[:,1,:][:,mask]
     torque_z = torque[:,2,:][:,mask]
+
 
     '''
     Evaluate solution
