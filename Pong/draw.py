@@ -83,4 +83,7 @@ def draw(sim:game, res=(500,500), frame_rate = 20):
 
 
 
+
+
+
     
