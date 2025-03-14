@@ -8,3 +8,4 @@ Media/*
 *.stl
 *.pth
 *.zip
+profile_output*
