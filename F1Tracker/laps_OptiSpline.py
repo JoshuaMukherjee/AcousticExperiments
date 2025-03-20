@@ -5,10 +5,10 @@ from acoustools.Solvers import wgs
 from acoustools.Utilities import add_lev_sig, create_points, TRANSDUCERS
 from acoustools.Paths import OptiSpline, create_bezier_circle, interpolate_bezier, connect_ends
 from acoustools.Optimise.OptiSpline_Objectives import optispline_min_acceleration_position, optispline_min_distance_control_points
-from acoustools.Visualiser import Visualise_single, ABC
+from acoustools.Visualiser import Visualise_single, ABC, get_point_pos
 
 from time import sleep
-import pickle
+import pickle, torch
 
 import matplotlib.animation as animation
 import matplotlib  as mpl
@@ -64,9 +64,9 @@ for pt in ps:
 
 start = create_bezier_circle(plane='xz')
 start_clone = start.clone()
-spline, saved = OptiSpline(start, points, optispline_min_distance_control_points,n=7, iters=100, get_intermediates=True)
+# spline, saved = OptiSpline(start, points, optispline_min_distance_control_points,n=7, iters=100, get_intermediates=True)
 
-# spline, saved = OptiSpline(start, points, optispline_min_acceleration_position,n=7, iters=100, get_intermediates=True, objective_params={"alpha":5e-7})
+spline, saved = OptiSpline(start, points, optispline_min_acceleration_position,n=7, iters=100, get_intermediates=True, objective_params={"alpha":5e-7})
 connect_ends(spline)
 
 
@@ -110,29 +110,38 @@ if plot_path:
 else:
     points = []
     for bez in spline:
-        points += interpolate_bezier(bez,50)
+        points += interpolate_bezier(bez,40)
 
     holos = []
     imgs = []
-    abc = ABC(0.05)
-    for p in points:
+    abc = ABC(0.14)
+    
+    track_p = torch.cat(points,dim=2)
+    track = get_point_pos(*abc,track_p,res=(500,500))
+    track = torch.stack(track).T
+
+    for i,p in enumerate(points):
+        # print(i,end='\r')
         x = wgs(p,iter=20, board=TRANSDUCERS)
         x = add_lev_sig(x)
         holos.append(x)
-        img = Visualise_single(*abc,x, res=(600,600))
-        imgs.append(img.cpu().detach().squeeze())
+        # img = Visualise_single(*abc,x, res=(600,600))
+        # imgs.append(img.cpu().detach().squeeze())
     fig = plt.figure()
     img_ax = fig.add_subplot(1,1,1)
 
     # fig.clear()
 
 
-    def traverse_holo(index):
-        # fig.clear()
-        img_ax.matshow(imgs[index], cmap='hot', vmax=7000)
 
+    def traverse_holo(index):
+        # img_ax.clear()
+        print(index,end='\r')
+        img = Visualise_single(*abc,holos[index], res=(500,500)).cpu().detach().squeeze()
+        img_ax.matshow(img, cmap='hot', vmax=7000)
+        img_ax.plot(track[1],track[0],linestyle='dashed',color='blue')
         
-    print(len(imgs))
-    ani = animation.FuncAnimation(fig, traverse_holo, frames=len(imgs), interval=50)
+    print(len(holos))
+    ani = animation.FuncAnimation(fig, traverse_holo, frames=len(holos), interval=50)
 
     ani.save("OptiSpline_Holos.gif", writer='imagemagick', dpi = 200)
