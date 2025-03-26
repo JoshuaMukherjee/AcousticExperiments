@@ -9,3 +9,4 @@ Media/*
 *.pth
 *.zip
 profile_output*
+*.holo

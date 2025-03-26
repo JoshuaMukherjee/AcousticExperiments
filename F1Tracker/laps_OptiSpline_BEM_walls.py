@@ -47,7 +47,7 @@ Y = telem.Y
 
 time = telem.Time
 
-X_norm = 2*((X - min(X)) / (max(X) - min(X)) ) -1  #Normalise [-1,1]
+X_norm = 2*((X - min(X)) / (max(X) - min(X)) ) -1  #Normalise [-1,1]1
 Y_norm = 2*((Y - min(Y)) / (max(Y) - min(Y)) ) -1  #Normalise [-1,1]                                      
 
 MAX_POS = 0.04
