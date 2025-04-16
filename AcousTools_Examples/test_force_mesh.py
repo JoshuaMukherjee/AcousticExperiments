@@ -1,93 +1,146 @@
-if __name__ == "__main__":
-    from acoustools.Force import force_mesh, compute_force, force_fin_diff
-    from acoustools.Utilities import create_points, propagate_abs, add_lev_sig, TRANSDUCERS
-    from acoustools.Solvers import wgs
-    from acoustools.Mesh import load_multiple_scatterers, get_normals_as_points, get_centres_as_points, get_areas, get_weight, scale_to_diameter, get_centre_of_mass_as_points,get_lines_from_plane
-    from acoustools.BEM import compute_E, BEM_forward_model_grad, propagate_BEM_pressure, BEM_gorkov_analytical, get_cache_or_compute_H_gradients
-    import acoustools.Constants as c 
-    from acoustools.Visualiser import Visualise, force_quiver_3d, force_quiver
+from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer
+from acoustools.Utilities import BOTTOM_BOARD, TRANSDUCERS, TOP_BOARD, add_lev_sig, propagate_abs
+from acoustools.Force import force_mesh, force_fin_diff
+from acoustools.Solvers import wgs
+from acoustools.BEM import BEM_forward_model_grad, compute_E, BEM_gorkov_analytical, propagate_BEM_pressure
+import acoustools.Constants as c
+from acoustools.Visualiser import ABC, Visualise
 
-    import vedo, torch
+import torch, vedo
 
+path = "../../BEMMedia"
 
-    board = TRANSDUCERS
+def bounds_to_diameters(bounds):
+    x1,x2,y1,y2,z1,z2 = bounds
+    print(bounds)
+    print(x2-x1,  y2-y1, z2-z1)
+    print(x2+x1,  y2+y1, z2+z1)
+    print()
 
-    path = "../BEMMedia"
-    paths = [path+"/Sphere-lam2.stl"]
-    scatterer = load_multiple_scatterers(paths,dys=[-0.06])
-    # scale_to_diameter(scatterer, 0.001)
-    scale_to_diameter(scatterer, 2*c.R)
-    print(get_centre_of_mass_as_points(scatterer))
-    # scale_to_diameter(scatterer, 6*c.R)
-
-    # vedo.write(scatterer,path+"/TinySphere-lam2.stl",False)
-    # exit()
-
-    weight = -1*get_weight(scatterer, c.p_p)
-    print(weight)
-    # weight = -1 * (0.1/1000) * 9.81
-
-    norms = get_normals_as_points(scatterer)
-    p = get_centres_as_points(scatterer)
-    com = get_centre_of_mass_as_points(scatterer)
-
-    E, F,G,H = compute_E(scatterer, com, TRANSDUCERS, return_components=True, path=path, print_lines=False)
-    Hx, Hy, Hz = get_cache_or_compute_H_gradients(scatterer, board,print_lines=False,path=path)
-    x = wgs(com, board=board, A=E)
-    x = add_lev_sig(x)
-    pres = propagate_BEM_pressure(x,p,scatterer,board=TRANSDUCERS,E=E)
-
-    areas = get_areas(scatterer)
-    # force = force_mesh(x,p,norms,areas,board, grad_function=BEM_forward_model_grad, F=E, grad_function_args={"scatterer":scatterer,"H":H,"path":path, F=H})
-    # force = force_mesh(x,p,norms,areas,board)
-    force = force_mesh(x,p,norms,areas,board,None,None,Ax=Hx, Ay=Hy, Az=Hz,F=H)
-    force[force.isnan()] = 0
-
-    F = torch.sum(force,dim=2)
-    print(F)
-
-    # print(F + weight)
-
-    # STEPSIZE = 0.000135156253*64
-    # STEPSIZE = c.wavelength/5
-    STEPSIZE = 0.0021
+def GH_Grad(points, scatterer, transducers=None, use_cache_H:bool=True, 
+                           print_lines:bool=False, H=None,
+                           path:str="Media"):
     
-    F_U_BEM = force_fin_diff(x, com, U_function=BEM_gorkov_analytical,U_fun_args={"scatterer":scatterer, "board":TRANSDUCERS,'path':path},stepsize=STEPSIZE)
-    # F_U_BEM = torch.reshape(F_U_BEM, (1,3,-1))
-    # print(torch.sum(F_U_BEM,dim=2))
-    print(F_U_BEM)
-
-    F_U_PM_FD = force_fin_diff(x, com,stepsize=STEPSIZE)
-    # F_U_PM_FD = torch.reshape(F_U_PM_FD, (1,3,-1))
-    # print(torch.sum(F_U_PM_FD,dim=2))
-    print(F_U_PM_FD)
-
-    F_A = compute_force(x,com)
-    # print(torch.sum(F_A,dim=1))
-    print(F_A)
-
-    # A = torch.tensor((-0.09,0, 0.09))
-    # B = torch.tensor((0.09,0, 0.09))
-    # C = torch.tensor((-0.09,0, -0.09))
-    # normal = (0,1,0)
-    # origin = (0,0,0)
-
-    A = torch.tensor((-0.01,0, 0.01))
-    B = torch.tensor((0.01,0, 0.01))
-    C = torch.tensor((-0.01,0, -0.01))
-    normal = (0,1,0)
-    origin = (0,0,0)
-
-    # A = torch.tensor((0,-0.09, 0.09))
-    # B = torch.tensor((0,0.09, 0.09))
-    # C = torch.tensor((0,-0.09, -0.09))
-    normal = (1,0,0)
-    # origin = (0,0,0)
+    Ex, Ey, Ez, Fx, Fy, Fz, Gx, Gy, Gz, H = BEM_forward_model_grad(points=points, scatterer=scatterer, transducers=transducers, use_cache_H=use_cache_H, H=H, path=path, return_components=True)
+    return Gx@H, Gy@H, Gz@H
 
 
-    line_params = {"scatterer":scatterer,"origin":origin,"normal":normal}
-    Visualise(A,B,C, x, colour_functions=[propagate_BEM_pressure],colour_function_args=[{"scatterer":scatterer,"board":TRANSDUCERS,"path":path}],vmax=9000, show=True,add_lines_functions=[get_lines_from_plane], add_line_args=[line_params])
-
-    # force_quiver(p,force[:,0,:],force[:,2,:], normal)
 
 
+USE_CACHE = True
+board = TRANSDUCERS
+
+sphere_pth =  path+"/Sphere-lam2.stl"
+sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
+scale_to_diameter(sphere,0.02)
+centre_scatterer(sphere)
+bounds_to_diameters(sphere.bounds())
+
+# vedo.show(sphere, axes=1)
+
+com = get_centre_of_mass_as_points(sphere)
+
+print('com',com)
+
+points = get_centres_as_points(sphere)
+norms = get_normals_as_points(sphere)
+areas = get_areas(sphere)
+
+
+E,F,G,H = compute_E(sphere, points, board,path=path, return_components=True)
+x = wgs(points,board=board,A=E)
+
+
+forces_x= []
+forces_y= []
+forces_z= []
+
+
+diameters = []
+
+As = []
+
+U  = BEM_gorkov_analytical(x, com, scatterer=sphere, board=board,H=H, path=path).detach().cpu()
+U_force = force_fin_diff(x,com, U_function=BEM_gorkov_analytical, U_fun_args={'scatterer':sphere,'H':H, 'path':path}, board=board).detach().cpu()
+print(U_force)
+
+def propagate_GH(activations, points,board=board):
+    E,F,G,H = compute_E(sphere, points, board,path=path, return_components=True)
+    return propagate_abs(activations, points, board, A=G@H)
+
+# Visualise(*ABC(0.1), x, colour_functions=[propagate_BEM_pressure], colour_function_args=[{'scatterer':sphere, "H":H, 'board':board, "path":path}])
+# Visualise(*ABC(0.1), x, colour_functions=[propagate_GH])
+
+# exit()
+
+for i in range(1,32):
+    print(i, end = '\r')
+
+    diameter = 0.03 + c.wavelength/8 * i
+    # surface  = sphere.copy()
+    surface = load_scatterer(sphere_pth)
+    # print(surface)
+    scale_to_diameter(surface,diameter, reset=False, origin=False)
+
+    centre_scatterer(surface)
+
+
+    points = get_centres_as_points(surface)
+    norms = get_normals_as_points(surface)
+    areas = get_areas(surface)
+
+    As.append(torch.mean(areas))
+
+    E,F,G,H = compute_E(sphere, points, board,path=path, H=H, return_components=True)
+    GH = G@H
+
+
+    force = force_mesh(x, points,norms,areas,board=board,F=GH, use_momentum=True,
+                    grad_function=GH_Grad, grad_function_args={'scatterer':sphere,
+                                                                                'H':H,
+                                                                                'path':path})
+    
+
+    # print(diameter, torch.sum(force))
+    forces_x.append(torch.sum(force[:,0]).detach().cpu())
+    forces_y.append(torch.sum(force[:,1]).detach().cpu())
+    forces_z.append(torch.sum(force[:,2]).detach().cpu())
+
+    diameters.append(diameter)
+
+
+print(forces_x[0], end=' ')
+print(forces_y[0], end=' ')
+print(forces_z[0])
+
+
+print(forces_x[-1], end=' ')
+print(forces_y[-1], end=' ')
+print(forces_z[-1])
+
+
+import matplotlib.pyplot as plt
+import plotext as plx
+
+plt.plot(diameters, forces_x, color='red')
+plt.plot(diameters, forces_y, color='green')
+plt.plot(diameters, forces_z, color='blue')
+# plt.plot(diameters, As, color='blue')
+
+
+
+
+plt.xlabel('Diameter (m)')
+plt.ylabel('Force (N)')
+
+PLT = False
+if PLT:
+    plt.show()
+else:
+    fig = plt.gcf()
+    fig.set_facecolor('white')
+    fig.set_edgecolor('white')
+    plx.from_matplotlib(fig)
+    plx.axes_color('white')
+    plx.canvas_color('white')
+    plx.show()

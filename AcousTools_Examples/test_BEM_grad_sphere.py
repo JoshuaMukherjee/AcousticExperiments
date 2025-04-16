@@ -9,10 +9,10 @@ if __name__ == "__main__":
     import acoustools.Constants as Constants
 
     import vedo, torch
-    path = "../BEMMedia"
+    path = "../..//BEMMedia"
 
     USE_CACHE = True
-    board = BOTTOM_BOARD
+    board = TRANSDUCERS
 
     sphere_pth =  path+"/Sphere-lam2.stl"
     sphere = load_scatterer(sphere_pth, dy=-0.06, dz=0.0) #Make mesh at 0,0,0
