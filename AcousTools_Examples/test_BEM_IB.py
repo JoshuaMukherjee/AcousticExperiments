@@ -24,7 +24,7 @@ if __name__ == '__main__':
 
     p = create_points(1,1, y=0,x=0,z=0.03)
 
-    E = compute_E(scatterer, p,board=board, path=path)
+    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=False)
 
     x = iterative_backpropagation(p,A=E)
 
@@ -34,4 +34,5 @@ if __name__ == '__main__':
     normal = (0,1,0)
     origin = (0,0,0)
 
-    Visualise(A,B,C, x, points=p,vmax=5000,colour_functions=[propagate_BEM_pressure], colour_function_args=[{'scatterer':scatterer,'board':board,'path':path}],clr_label="Pressure (Pa)")
+    Visualise(A,B,C, x, points=p,vmax=5000,colour_functions=[propagate_BEM_pressure], res=(200,200),
+              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False }])

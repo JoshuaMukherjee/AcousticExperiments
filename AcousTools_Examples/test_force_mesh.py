@@ -32,7 +32,8 @@ board = TRANSDUCERS
 
 sphere_pth =  path+"/Sphere-lam2.stl"
 sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
-scale_to_diameter(sphere,0.02)
+diameter = 0.04
+scale_to_diameter(sphere,diameter)
 centre_scatterer(sphere)
 bounds_to_diameters(sphere.bounds())
 
@@ -42,7 +43,7 @@ com = get_centre_of_mass_as_points(sphere)
 
 print('com',com)
 
-points = get_centres_as_points(sphere)
+points = get_centres_as_points(sphere) * 1.05
 norms = get_normals_as_points(sphere)
 areas = get_areas(sphere)
 
@@ -70,13 +71,12 @@ def propagate_GH(activations, points,board=board):
 
 # Visualise(*ABC(0.1), x, colour_functions=[propagate_BEM_pressure], colour_function_args=[{'scatterer':sphere, "H":H, 'board':board, "path":path}])
 # Visualise(*ABC(0.1), x, colour_functions=[propagate_GH])
-
 # exit()
 
 for i in range(1,32):
     print(i, end = '\r')
 
-    diameter = 0.03 + c.wavelength/8 * i
+    diameter = diameter + 0.01 + c.wavelength/8 * i
     # surface  = sphere.copy()
     surface = load_scatterer(sphere_pth)
     # print(surface)
