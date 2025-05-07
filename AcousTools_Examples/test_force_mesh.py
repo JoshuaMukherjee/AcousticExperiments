@@ -32,8 +32,8 @@ board = TRANSDUCERS
 
 sphere_pth =  path+"/Sphere-lam2.stl"
 sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
-diameter = 0.04
-scale_to_diameter(sphere,diameter)
+d = 0.04
+scale_to_diameter(sphere,d)
 centre_scatterer(sphere)
 bounds_to_diameters(sphere.bounds())
 
@@ -76,7 +76,7 @@ def propagate_GH(activations, points,board=board):
 for i in range(1,32):
     print(i, end = '\r')
 
-    diameter = diameter + 0.01 + c.wavelength/8 * i
+    diameter = d + 0.01 + c.wavelength/8 * i
     # surface  = sphere.copy()
     surface = load_scatterer(sphere_pth)
     # print(surface)
