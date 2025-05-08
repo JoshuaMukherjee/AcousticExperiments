@@ -6,7 +6,7 @@ if __name__ == '__main__':
 
     print('Computing...')
     
-    COMPUTE = False
+    COMPUTE = True
     N = 1000
     radius = 0.02
     
@@ -26,9 +26,9 @@ if __name__ == '__main__':
             xs.append(x)
             if i % 100 == 0:
                 print(i)
-        pickle.dump(xs,open('acoustools/tests/data/circle' + str(N) + '.pth','wb'))
+        pickle.dump(xs,open('AcousTools_Examples/data/circle' + str(N) + '.pth','wb'))
     else:
-        xs = pickle.load(open('acoustools/tests/data/circle' + str(N) + '.pth','rb'))
+        xs = pickle.load(open('AcousTools_Examples/data/circle' + str(N) + '.pth','rb'))
 
 
     print('Finished Computing \nConnecting to PAT...')
