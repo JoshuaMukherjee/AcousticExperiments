@@ -32,9 +32,9 @@ if __name__ == '__main__':
             xs.append(x)
             if i % 100 == 0:
                 print(i)
-        pickle.dump(xs,open('acoustools/tests/data/bottom_circle' + str(N) + '.pth','wb'))
+        pickle.dump(xs,open('AcousTools_Examples/data/bottom_circle' + str(N) + '.pth','wb'))
     else:
-        xs = pickle.load(open('acoustools/tests/data/bottom_circle' + str(N) + '.pth','rb'))
+        xs = pickle.load(open('AcousTools_Examples/data/bottom_circle' + str(N) + '.pth','rb'))
 
     diconnected = False
     print('Finished Computing \nConnecting to PAT...')
@@ -48,7 +48,7 @@ if __name__ == '__main__':
 
         start = time.time_ns()
         lev.set_frame_rate(200)
-        lev.levitate(xs,num_loops=1000)
+        lev.levitate(xs,num_loops=10)
         end = time.time_ns()
         print((end-start)/1e9, 'Seconds')
         lev.disconnect()
