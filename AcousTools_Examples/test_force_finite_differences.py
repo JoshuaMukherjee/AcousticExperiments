@@ -20,6 +20,8 @@ if __name__ == "__main__":
 
     force = force_fin_diff(x, p, board=board,stepsize=c.wavelength/8)
 
+    print(force.shape)
+
     print(force)
 
     res = (100,100)
