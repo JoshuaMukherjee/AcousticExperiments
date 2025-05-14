@@ -1,5 +1,5 @@
 from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer
-from acoustools.Utilities import BOTTOM_BOARD, TRANSDUCERS, TOP_BOARD, add_lev_sig, propagate_abs, transducers
+from acoustools.Utilities import BOTTOM_BOARD, TRANSDUCERS, TOP_BOARD, add_lev_sig, propagate_abs, transducers, create_points
 from acoustools.Force import force_mesh, force_fin_diff, compute_force
 from acoustools.Solvers import wgs
 from acoustools.BEM import BEM_forward_model_grad, compute_E, BEM_gorkov_analytical, propagate_BEM_pressure
@@ -28,9 +28,10 @@ def GH_Grad(points, scatterer, transducers=None, use_cache_H:bool=True,
 
 
 USE_CACHE = True
-board = transducers(2, z=0.03)
+M = 2
+board = transducers(M)
 
-sphere_pth =  path+"/Sphere-lam2.stl"
+sphere_pth =  path+"/Sphere-solidworks-lam2.stl"
 sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
 d = c.wavelength/16
 scale_to_diameter(sphere,d)
@@ -47,17 +48,19 @@ com = get_centre_of_mass_as_points(sphere)
 
 print('com',com)
 
-points = get_centres_as_points(sphere) * 1.05
+points = get_centres_as_points(sphere) 
 norms = get_normals_as_points(sphere)
 areas = get_areas(sphere)
 # force_quiver_3d(points, norms[:,0], norms[:,1], norms[:,2], scale=1e-5)
 print('norm sum',torch.sum(norms, dim=2))
 print('CV',torch.sum(norms*areas, dim=2) / (3*v_sphere))
-exit()
+print()
+# exit()
 
 E,F,G,H = compute_E(sphere, points, board,path=path, return_components=True)
-x = wgs(points,board=board,A=E)
-
+# x = wgs(points,board=board,A=E)
+x = wgs(com +create_points(1,1,0.01,0.01,0.01),board=board)
+# x = add_lev_sig(x, board=board, board_size=M**2)
 
 forces_x= []
 forces_y= []
@@ -70,24 +73,26 @@ As = []
 
 # U  = BEM_gorkov_analytical(x, com, scatterer=sphere, board=board,H=H, path=path).detach().cpu()
 # U_force_BEM = force_fin_diff(x,com, U_function=BEM_gorkov_analytical, U_fun_args={'scatterer':sphere,'H':H, 'path':path}, board=board).detach().cpu()
-U_force = compute_force(x, com, board).unsqueeze(0)
-U_force_fd = force_fin_diff(x,com,board=board)
+U_force = compute_force(x, com, board).squeeze()
+U_force_fd = force_fin_diff(x,com,board=board, stepsize=c.wavelength/10).squeeze()
 print(U_force)
 print(U_force_fd)
 # print(U_force_BEM)
+print()
+# exit()
 
 def propagate_GH(activations, points,board=board):
     E,F,G,H = compute_E(sphere, points, board,path=path, return_components=True)
     return propagate_abs(activations, points, board, A=G@H)
 
-# Visualise(*ABC(0.035), x, colour_functions=[propagate_BEM_pressure, propagate_GH], colour_function_args=[{'scatterer':sphere, "H":H, 'board':board, "path":path},{}])
+# Visualise(*ABC(0.1), x,points=com, colour_functions=[propagate_BEM_pressure, propagate_GH], colour_function_args=[{'scatterer':sphere, "H":H, 'board':board, "path":path},{}])
 # Visualise(*ABC(0.1), x, colour_functions=[propagate_GH])
 # exit()
 
 for i in range(1,16):
     print(i, end = '\r')
 
-    diameter = d + 0.01 + c.wavelength/8 * i
+    diameter = d + 2*c.wavelength + c.wavelength/8 * i
     # surface  = sphere.copy()
     surface = load_scatterer(sphere_pth)
     # print(surface)
@@ -103,9 +108,8 @@ for i in range(1,16):
     As.append(torch.mean(areas))
 
     E,F,G,H = compute_E(sphere, points, board,path=path, H=H, return_components=True)
-    GH = G@H
-
-
+    
+    # GH = G@H
     # force = force_mesh(x, points,norms,areas,board=board,F=GH, use_momentum=True,
     #                 grad_function=GH_Grad, grad_function_args={'scatterer':sphere,
     #                                                                             'H':H,
@@ -134,6 +138,12 @@ print(forces_x[-1], end=' ')
 print(forces_y[-1], end=' ')
 print(forces_z[-1])
 
+print(forces_x[-1] / U_force[0], end=' ')
+print(forces_y[-1] / U_force[1], end=' ')
+print(forces_z[-1] / U_force[2], end = ' ')
+print((forces_x[-1] / U_force[0]) / (forces_z[-1] / U_force[2]))
+
+
 
 import matplotlib.pyplot as plt
 import plotext as plx
@@ -148,11 +158,11 @@ plt.plot(diameters, forces_z, color='blue')
 plt.xlabel('Diameter (m)')
 plt.ylabel('Force (N)')
 
-PLT = False
+PLT = True
 if PLT:
-    plt.hlines(U_force[:,0], color='red', linestyles=':', xmin=d + 0.01, xmax=diameter)
-    plt.hlines(U_force[:,1], color='green', linestyles=':', xmin=d + 0.01, xmax=diameter)
-    plt.hlines(U_force[:,2], color='blue', linestyles=':', xmin=d + 0.01, xmax=diameter)
+    plt.hlines(U_force[0].cpu().detach(), color='red', linestyles=':', xmin=d + 0.01, xmax=diameter)
+    plt.hlines(U_force[1].cpu().detach(), color='green', linestyles=':', xmin=d + 0.01, xmax=diameter)
+    plt.hlines(U_force[2].cpu().detach(), color='blue', linestyles=':', xmin=d + 0.01, xmax=diameter)
 
     plt.show()
 else:

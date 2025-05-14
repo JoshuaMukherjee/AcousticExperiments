@@ -9,7 +9,7 @@ if __name__ == "__main__":
     import acoustools.Constants as Constants
 
     import vedo, torch
-    path = "../..//BEMMedia"
+    path = "../BEMMedia"
 
     USE_CACHE = True
     board = TRANSDUCERS
