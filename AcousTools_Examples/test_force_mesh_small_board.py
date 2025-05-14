@@ -52,7 +52,7 @@ norms = get_normals_as_points(sphere)
 areas = get_areas(sphere)
 # force_quiver_3d(points, norms[:,0], norms[:,1], norms[:,2], scale=1e-5)
 print('norm sum',torch.sum(norms, dim=2))
-print('CV',torch.sum(norms*areas, dim=2) / v_sphere)
+print('CV',torch.sum(norms*areas, dim=2) / (3*v_sphere))
 exit()
 
 E,F,G,H = compute_E(sphere, points, board,path=path, return_components=True)
