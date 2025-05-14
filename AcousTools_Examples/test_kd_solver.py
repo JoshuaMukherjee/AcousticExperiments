@@ -1,8 +1,8 @@
 from acoustools.Solvers import kd_solver
-from acoustools.Utilities import transducers, create_points, propagate
+from acoustools.Utilities import transducers, create_points, propagate, BOARD_POSITIONS
 from acoustools.Visualiser import Visualise, ABC
 
-board = transducers(4, 0.04)
+board = transducers(4, BOARD_POSITIONS)
 p = create_points(1,1,0,0,0)
 
 x = kd_solver(p,board)
