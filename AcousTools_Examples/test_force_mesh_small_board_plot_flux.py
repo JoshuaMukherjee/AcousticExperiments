@@ -1,5 +1,6 @@
 from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer
-from acoustools.Utilities import BOTTOM_BOARD, TRANSDUCERS, TOP_BOARD, add_lev_sig, propagate_abs, transducers, create_points
+from acoustools.Utilities import BOTTOM_BOARD, TRANSDUCERS, TOP_BOARD, add_lev_sig, propagate_abs, transducers, create_points, forward_model
+from acoustools.Utilities.Piston_model_gradients import forward_model_grad
 from acoustools.Force import force_mesh, force_fin_diff, compute_force
 from acoustools.Solvers import wgs
 from acoustools.BEM import BEM_forward_model_grad, compute_E, BEM_gorkov_analytical, propagate_BEM_pressure
@@ -28,12 +29,12 @@ def GH_Grad(points, scatterer, transducers=None, use_cache_H:bool=True,
 
 
 USE_CACHE = True
-M = 2
+M = 8
 board = transducers(M)
 
 sphere_pth =  path+"/Sphere-solidworks-lam2.stl"
 sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
-d = c.wavelength/16
+d = c.wavelength/10
 scale_to_diameter(sphere,d)
 centre_scatterer(sphere)
 bounds_to_diameters(sphere.bounds())
@@ -59,13 +60,17 @@ print()
 
 E,F,G,H = compute_E(sphere, points, board,path=path, return_components=True)
 # x = wgs(points,board=board,A=E)
-x = wgs(com +create_points(1,1,0.01,0.01,0.01),board=board)
-# x = wgs(com,board=board)
+D = 0.01
+x = wgs(com +create_points(1,1,D,D,D),board=board)
 # x = add_lev_sig(x, board=board, board_size=M**2)
 
 forces_x= []
 forces_y= []
 forces_z= []
+
+flux_x = []
+flux_y = []
+flux_z = []
 
 
 diameters = []
@@ -74,8 +79,8 @@ As = []
 
 # U  = BEM_gorkov_analytical(x, com, scatterer=sphere, board=board,H=H, path=path).detach().cpu()
 # U_force_BEM = force_fin_diff(x,com, U_function=BEM_gorkov_analytical, U_fun_args={'scatterer':sphere,'H':H, 'path':path}, board=board).detach().cpu()
-U_force = compute_force(x, com, board).squeeze()
-U_force_fd = force_fin_diff(x,com,board=board, stepsize=c.wavelength/10).squeeze()
+U_force = compute_force(x, com, board, V=v_sphere).squeeze()
+U_force_fd = force_fin_diff(x,com,board=board, stepsize=c.wavelength/10, V=v_sphere).squeeze()
 print(U_force)
 print(U_force_fd)
 # print(U_force_BEM)
@@ -90,10 +95,10 @@ def propagate_GH(activations, points,board=board):
 # Visualise(*ABC(0.1), x, colour_functions=[propagate_GH])
 # exit()
 
-for i in range(1,16):
+for i in range(1,8):
     print(i, end = '\r')
 
-    diameter = d + 2*c.wavelength + c.wavelength/8 * i
+    diameter = d + 2*c.wavelength + c.wavelength/16 * i
     # surface  = sphere.copy()
     surface = load_scatterer(sphere_pth)
     # print(surface)
@@ -111,39 +116,48 @@ for i in range(1,16):
     E,F,G,H = compute_E(sphere, points, board,path=path, H=H, return_components=True)
     
     # GH = G@H
-    # force = force_mesh(x, points,norms,areas,board=board,F=GH, use_momentum=True,
+    # force, flux = force_mesh(x, points,norms,areas,board=board,F=GH, use_momentum=True,
     #                 grad_function=GH_Grad, grad_function_args={'scatterer':sphere,
     #                                                                             'H':H,
-    #                                                                             'path':path})
+    #                                                                             'path':path}, return_components=True)
     
-    force = force_mesh(x, points,norms,areas,board=board,F=E, use_momentum=True,
+    force, flux = force_mesh(x, points,norms,areas,board=board,F=E, use_momentum=True,
                     grad_function=BEM_forward_model_grad, grad_function_args={'scatterer':sphere,
                                                                                 'H':H,
-                                                                                'path':path})
+                                                                                'path':path}, return_components=True)
+
+    # force, flux = force_mesh(x, points,norms,areas,board=board, use_momentum=True, F_fun=forward_model ,
+    #                 grad_function=forward_model_grad, return_components=True)
     
+    pressure_force = force - flux
 
     # print(diameter, torch.sum(force))
-    forces_x.append(torch.sum(force[:,0]).detach().cpu())
-    forces_y.append(torch.sum(force[:,1]).detach().cpu())
-    forces_z.append(torch.sum(force[:,2]).detach().cpu())
+    forces_x.append(torch.sum(pressure_force[:,0]).detach().cpu())
+    forces_y.append(torch.sum(pressure_force[:,1]).detach().cpu())
+    forces_z.append(torch.sum(pressure_force[:,2]).detach().cpu())
+
+    flux_x.append(torch.sum(flux[:,0]).detach().cpu())
+    flux_y.append(torch.sum(flux[:,1]).detach().cpu())
+    flux_z.append(torch.sum(flux[:,2]).detach().cpu())
 
     diameters.append(diameter)
 
 
-print(forces_x[0], end=' ')
-print(forces_y[0], end=' ')
-print(forces_z[0])
+print(forces_x[0] + flux_x[0], end=' ')
+print(forces_y[0] + flux_y[0], end=' ')
+print(forces_z[0] + flux_y[0])
 
 
-print(forces_x[-1], end=' ')
-print(forces_y[-1], end=' ')
-print(forces_z[-1])
+print(forces_x[-1] + flux_x[-1], end=' ')
+print(forces_y[-1] + flux_y[-1], end=' ')
+print(forces_z[-1] + flux_z[-1])
 
-print(forces_x[-1] / U_force[0], end=' ')
-print(forces_y[-1] / U_force[1], end=' ')
-print(forces_z[-1] / U_force[2], end = ' ')
-print((forces_x[-1] / U_force[0]) / (forces_z[-1] / U_force[2]))
+print(U_force)
 
+print((forces_x[-1] + flux_x[-1]) / (U_force[0]), end=' ')
+print((forces_y[-1] + flux_y[-1]) / (U_force[1]), end=' ')
+print((forces_z[-1] + flux_z[-1]) / (U_force[2]), end=' ')
+print()
 
 
 import matplotlib.pyplot as plt
@@ -152,6 +166,10 @@ import plotext as plx
 plt.plot(diameters, forces_x, color='red')
 plt.plot(diameters, forces_y, color='green')
 plt.plot(diameters, forces_z, color='blue')
+
+plt.plot(diameters, flux_x, 'r:')
+plt.plot(diameters, flux_y, 'g:')
+plt.plot(diameters, flux_z, 'b:')
 # plt.plot(diameters, As, color='blue')
 
 
@@ -159,12 +177,8 @@ plt.plot(diameters, forces_z, color='blue')
 plt.xlabel('Diameter (m)')
 plt.ylabel('Force (N)')
 
-PLT = False
+PLT = True
 if PLT:
-    plt.hlines(U_force[0].cpu().detach(), color='red', linestyles=':', xmin=d + 0.01, xmax=diameter)
-    plt.hlines(U_force[1].cpu().detach(), color='green', linestyles=':', xmin=d + 0.01, xmax=diameter)
-    plt.hlines(U_force[2].cpu().detach(), color='blue', linestyles=':', xmin=d + 0.01, xmax=diameter)
-
     plt.show()
 else:
     fig = plt.gcf()
