@@ -16,4 +16,4 @@ if __name__ == "__main__":
     origin = (0,0,0)
 
 
-    Visualise(A,B,C, x, res=(800,800))
+    Visualise(A,B,C, x, res=(200,200), points=p)
