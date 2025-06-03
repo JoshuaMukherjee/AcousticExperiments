@@ -27,25 +27,27 @@ H = get_cache_or_compute_H(sphere, board, path=path)
 
 p = create_points(1,1,0,0,0.015)
 x = wgs(p, board=board)
-# x = add_lev_sig(x)
+x = add_lev_sig(x, mode='Twin')
 
 stepsize = c.wavelength/64
 
-def force_z(activations, points, board=board):
-    Fz = BEM_compute_force(activations, points, board, scatterer=sphere, H=H)[2].unsqueeze(0)
+INDEX = 2
+
+def force(activations, points, board=board):
+    Fz = BEM_compute_force(activations, points, board, scatterer=sphere, H=H)[INDEX].unsqueeze(0)
     return Fz
 
-def force_z_fd(activations, points, board=board):
+def force_fd(activations, points, board=board):
     Fz = force_fin_diff(activations, points, board=board, stepsize=stepsize, U_function=BEM_gorkov_analytical,
-                        U_fun_args={"path":path,"scatterer":sphere,"H":H})[:,2]
+                        U_fun_args={"path":path,"scatterer":sphere,"H":H})[:,INDEX]
     return Fz
 
 
 def diff_percent(activations, points, board = board):
     f1 = force_fin_diff(activations, points, board=board, stepsize=stepsize, U_function=BEM_gorkov_analytical,
-                        U_fun_args={"path":path,"scatterer":sphere,"H":H})[:,2]
-    f2 = BEM_compute_force(activations, points, board, scatterer=sphere, H=H)[2].unsqueeze(0)
+                        U_fun_args={"path":path,"scatterer":sphere,"H":H})[:,INDEX]
+    f2 = BEM_compute_force(activations, points, board, scatterer=sphere, H=H)[INDEX].unsqueeze(0)
     return ((f2 - f1) / f1) * 100
 
-R = 50
-Visualise(*ABC(0.01, origin=p),x, points=p, colour_functions= [force_z, force_z_fd], res=(R,R), link_ax=[0,1])
+R = 40
+Visualise(*ABC(0.005, origin=p),x, points=p, colour_functions= [force, force_fd], res=(R,R), link_ax=[0,1])
