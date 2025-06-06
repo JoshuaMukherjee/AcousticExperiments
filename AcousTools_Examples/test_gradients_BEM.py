@@ -121,12 +121,12 @@ if __name__ == "__main__":
         # p_angle = torch.angle(P_a)
 
         print("Grad","Analytical","Finite Differences","Ratio",sep="\t")
-        Px  = torch.abs(Ex@activations)
-        print("px", Px.item(), torch.abs(grad[0,0]).item(),torch.abs(grad[0,0]).item() / Px.item(),sep="\t")
-        Py  = torch.abs(Ey@activations)
-        print("py", Py.item(),torch.abs(grad[0,1]).item(),torch.abs(grad[0,1]).item() / Py.item(),sep="\t")
-        Pz  = torch.abs(Ez@activations)
-        print("pz", Pz.item(), torch.abs(grad[0,2]).item(),torch.abs(grad[0,2]).item() / Pz.item(),sep="\t")
+        Px  = (Ex@activations)
+        print("px", Px.item(), (grad[0,0]).item(),(grad[0,0]).item() / Px.item(),sep="\t")
+        Py  = (Ey@activations)
+        print("py", Py.item(),(grad[0,1]).item(),(grad[0,1]).item() / Py.item(),sep="\t")
+        Pz  = (Ez@activations)
+        print("pz", Pz.item(), (grad[0,2]).item(),(grad[0,2]).item() / Pz.item(),sep="\t")
         
         print()
 
@@ -135,12 +135,12 @@ if __name__ == "__main__":
 
         grad_unmixed = (split[:,0,:] - 2*pressure + split[:,1,:]) / (stepsize**2)
 
-        Pxx = torch.abs(Exx@activations)
-        print("Pxx", Pxx.item(), torch.abs(grad_unmixed[0,0]).item(), torch.abs(grad_unmixed[0,0]).item() / Pxx.item(),sep="\t")
-        Pyy = torch.abs(Eyy@activations)
-        print("Pyy", Pyy.item(), torch.abs(grad_unmixed[0,1]).item(), torch.abs(grad_unmixed[0,1]).item() / Pyy.item(),sep="\t")
-        Pzz = torch.abs(Ezz@activations)
-        print("Pzz", Pzz.item(), torch.abs(grad_unmixed[0,2]).item(), torch.abs(grad_unmixed[0,2]).item() / Pzz.item(),sep="\t")
+        Pxx = (Exx@activations)
+        print("Pxx", Pxx.item(), (grad_unmixed[0,0]).item(), (grad_unmixed[0,0]).item() / Pxx.item(),sep="\t")
+        Pyy = (Eyy@activations)
+        print("Pyy", Pyy.item(), (grad_unmixed[0,1]).item(), (grad_unmixed[0,1]).item() / Pyy.item(),sep="\t")
+        Pzz = (Ezz@activations)
+        print("Pzz", Pzz.item(), (grad_unmixed[0,2]).item(), (grad_unmixed[0,2]).item() / Pzz.item(),sep="\t")
 
         print()
 
@@ -152,20 +152,20 @@ if __name__ == "__main__":
         E_fd_m = compute_E(sphere, mixed_points, board, path=path, H=H)
         mixed_pressure_points = propagate(activations, mixed_points, A=E_fd_m)
               
-        Pxy = torch.abs(Exy@activations)
+        Pxy = (Exy@activations)
                 
         mixed_pressure_fin_diff_xy = mixed_pressure_points[:,1:5] * torch.tensor([1,-1,-1,1])
         Pxy_fd = torch.sum(mixed_pressure_fin_diff_xy) / (4*stepsize_x*stepsize_y)
-        print("Pxy",Pxy.item(), torch.abs(Pxy_fd).item(),torch.abs(Pxy_fd).item()/Pxy.item(),sep='\t')
+        print("Pxy",Pxy.item(), (Pxy_fd).item(),(Pxy_fd).item()/Pxy.item(),sep='\t')
 
-        Pxz = torch.abs(Exz@activations)
+        Pxz = (Exz@activations)
         mixed_pressure_fin_diff_xz = mixed_pressure_points[:,5:9] * torch.tensor([1,-1,-1,1])
         Pxz_fd = torch.sum(mixed_pressure_fin_diff_xz) / (4*stepsize_x*stepsize_z)
-        print("Pxz",Pxz.item(), torch.abs(Pxz_fd).item(), torch.abs(Pxz_fd).item()/Pxz.item() ,sep='\t')
+        print("Pxz",Pxz.item(), (Pxz_fd).item(), (Pxz_fd).item()/Pxz.item() ,sep='\t')
 
-        Pyz = torch.abs(Eyz@activations)
+        Pyz = (Eyz@activations)
         mixed_pressure_fin_diff_yz = mixed_pressure_points[:,9:] * torch.tensor([1,-1,-1,1])
         Pyz_fd = torch.sum(mixed_pressure_fin_diff_yz) / (4*stepsize_y*stepsize_z)
-        print("Pyz",Pyz.item(), torch.abs(Pyz_fd).item(), torch.abs(Pyz_fd).item()/Pyz.item() ,sep='\t')
+        print("Pyz",Pyz.item(), (Pyz_fd).item(), (Pyz_fd).item()/Pyz.item() ,sep='\t')
 
 
