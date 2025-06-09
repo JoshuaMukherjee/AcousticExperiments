@@ -18,6 +18,8 @@ if __name__ == '__main__':
     board = TOP_BOARD
 
     # path = "../../BEMMedia"
+
+    
     path = '../BEMMedia'
     paths = [path+"/Sphere-lam2.stl"]
     scatterer = load_multiple_scatterers(paths,dys=[-0.06],dzs=[-0.03])
