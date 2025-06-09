@@ -1,4 +1,4 @@
-from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propagate_abs, transducers
+from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propagate_abs
 from acoustools.Force import compute_force
 from acoustools.Solvers import wgs
 from acoustools.Constants import wavelength, pi
@@ -10,25 +10,24 @@ from acoustools.Visualiser import ABC, Visualise
 import torch
 import matplotlib.pyplot as plt
 
-# torch.random.manual_seed(1)
+torch.random.manual_seed(1)
 torch.set_printoptions(precision=8)
 
-M = 16
-board = transducers(M)
-# p = create_points(1,1,x=wavelength/8, y=wavelength/8, z=wavelength/8)
-p = create_points(1,1, max_pos=wavelength/3, min_pos=-wavelength/3)
+
+board = TRANSDUCERS
+p = create_points(1,1,x=wavelength/8, y=wavelength/8, z=wavelength/8)
 
 x = wgs(p, board=board)
-x = add_lev_sig(x, board=board, board_size=M**2)
+x = add_lev_sig(x)
 
-# Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board}])
+
 
 path = "../BEMMedia"
 
 cache = True
 
-start_d = wavelength/32
-max_d = wavelength/10
+start_d = wavelength/64
+max_d = wavelength
 N = 16
 
 U_forces_x = []
@@ -43,15 +42,18 @@ A_forces_x = []
 A_forces_y = []
 A_forces_z = []
 
-ds = []
+momentum_x = []
+momentum_y = []
+momentum_z = []
 
-diameters = torch.linspace(start_d, max_d, steps=N)
+
+
+ds = []
 
 for i in range(N):
     print(i,end='\r')
-    # d = start_d + (max_d/N)*i * 1.01
+    d = start_d + (max_d/N)*i * 1.01
     # d = max_d * 1.01
-    d = diameters[i]
     v = 4/3 * pi * (d/2)**3
 
     sphere_pth =  path+"/Sphere-solidworks-lam2.stl"
@@ -77,19 +79,32 @@ for i in range(N):
     U_forces_y.append(U_force[1])
     U_forces_z.append(U_force[2])
 
-    A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
-                                                        diameter=wavelength*2, use_cache_H=cache).squeeze().detach()
+    res= force_mesh_surface(x, sphere, board, return_momentum=True,H=H,path=path,
+                                                        diameter=wavelength*2, use_cache_H=cache)
     
-    A_forces_x.append(A_force[0])
-    A_forces_y.append(A_force[1])
-    A_forces_z.append(A_force[2])
+    A_force, momentum = res
+
+    A_force = A_force.squeeze().detach()
+    momentum = torch.sum(momentum.squeeze().detach(), dim=1)
+
+    # print(A_force.shape, momentum.shape)
+    
+    A_forces_x.append(A_force[0] - momentum[0])
+    A_forces_y.append(A_force[1] - momentum[1])
+    A_forces_z.append(A_force[2] - momentum[2])
+
+    momentum_x.append(momentum[0])
+    momentum_y.append(momentum[1])
+    momentum_z.append(momentum[2])
 
     # U_forces_BEM_x.append(U_force_BEM[0])
     # U_forces_BEM_y.append(U_force_BEM[1])
     # U_forces_BEM_z.append(U_force_BEM[2])
     print(d, v)
     print('U',U_force)
-    print('A',A_force)
+    print('A',A_force - momentum)
+    print('P',momentum)
+    print('F', A_force)
     print(U_force/A_force, (U_force/A_force)[1] / (U_force/A_force)[2])
     print()
 
@@ -100,23 +115,22 @@ for i in range(N):
 
 
 
-plt.plot(ds, U_forces_x, color='r', linestyle=':', label=r'${-\nabla_x U}$')
-plt.plot(ds, U_forces_y, color='g', linestyle=':', label=r'${-\nabla_y U}$')
-plt.plot(ds, U_forces_z, color='b', linestyle=':', label=r'${-\nabla_z U}$')
+plt.plot(ds, U_forces_x, color='r', linestyle=':')
+plt.plot(ds, U_forces_y, color='g', linestyle=':')
+plt.plot(ds, U_forces_z, color='b', linestyle=':')
+
+plt.plot(ds, momentum_x, color='r', linestyle='--')
+plt.plot(ds, momentum_y, color='g', linestyle='--')
+plt.plot(ds, momentum_z, color='b', linestyle='--')
 
 
-plt.plot(ds, A_forces_x, color='r', label='$F_x$')
-plt.plot(ds, A_forces_y, color='g', label='$F_y$')
-plt.plot(ds, A_forces_z, color='b', label='$F_z$')
+plt.plot(ds, A_forces_x, color='r')
+plt.plot(ds, A_forces_y, color='g')
+plt.plot(ds, A_forces_z, color='b')
 
 # plt.plot(ds, U_forces_BEM_x, color='r', linestyle=':')
 # plt.plot(ds, U_forces_BEM_y, color='g', linestyle=':')
 # plt.plot(ds, U_forces_BEM_z, color='b', linestyle=':')
-
-plt.legend()
-
-plt.ylabel('Force (N)')
-plt.xlabel('Particle Diameter (m)')
 
 plt.show()
 
