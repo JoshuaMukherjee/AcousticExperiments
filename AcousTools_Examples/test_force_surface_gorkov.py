@@ -7,7 +7,7 @@ from acoustools.BEM import BEM_compute_force, compute_E, propagate_BEM_pressure,
 from acoustools.Visualiser import ABC, Visualise
 
 
-import torch
+import torch, random
 import matplotlib.pyplot as plt
 
 # torch.random.manual_seed(1)
@@ -29,7 +29,7 @@ cache = True
 
 start_d = wavelength/32
 max_d = wavelength * 2/3
-N = 32
+N = 16
 
 U_forces_x = []
 U_forces_y = []
@@ -77,8 +77,9 @@ for i in range(N):
     U_forces_y.append(U_force[1])
     U_forces_z.append(U_force[2])
 
+    dim = 3*wavelength*(random.random()+1)
     A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
-                                                        diameter=wavelength*2, use_cache_H=cache).squeeze().detach()
+                                                        diameter=dim, use_cache_H=cache).squeeze().detach()
     
     A_forces_x.append(A_force[0])
     A_forces_y.append(A_force[1])
@@ -87,7 +88,7 @@ for i in range(N):
     # U_forces_BEM_x.append(U_force_BEM[0])
     # U_forces_BEM_y.append(U_force_BEM[1])
     # U_forces_BEM_z.append(U_force_BEM[2])
-    print(d, v)
+    print(d, v, dim)
     print('U',U_force)
     print('A',A_force)
     print(U_force/A_force, (U_force/A_force)[1] / (U_force/A_force)[2])

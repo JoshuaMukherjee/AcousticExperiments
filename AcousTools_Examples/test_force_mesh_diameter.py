@@ -8,7 +8,7 @@ from acoustools.Visualiser import ABC, Visualise
 
 import torch, vedo
 
-path = "../../BEMMedia"
+path = "../BEMMedia"
 
 def bounds_to_diameters(bounds):
     x1,x2,y1,y2,z1,z2 = bounds
