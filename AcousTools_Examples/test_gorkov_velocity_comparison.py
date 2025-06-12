@@ -23,26 +23,22 @@ def gorkov_analytical_velocity(activations: Tensor, points: Tensor,board:Tensor|
     pz = (Fz@activations).squeeze(2).unsqueeze(0)
 
     grad  = torch.cat((px,py,pz),dim=1)
-    print(grad)
-    exit()
 
     K1, K2 = get_gorkov_constants(V=V)
-    g = K2*(torch.sum(torch.abs(grad)**2, dim=1))
+    # g = K2*(torch.sum(torch.abs(grad)**2, dim=1))
+    p_term = K1* pressure_square
 
-    velocity = grad /( 1j * c.p_0 * c.f)
+    velocity = grad /( 1j * c.p_0 * c.angular_frequency)
     velocity_time_average = 1/2 * torch.sum(velocity * velocity.conj().resolve_conj(), dim=1, keepdim=True).real
 
-    f1 = 1 - (c.p_0*c.c_0**2)/(c.p_p * c.c_p**2)
-    f2 = 2 * (c.p_p - c.p_0)/(2*c.p_p + c.p_0)
+    f1 = 1 -( (c.p_0*c.c_0**2)/(c.p_p * c.c_p**2))
+    f2 = (2 * (c.p_p - c.p_0))/(2*c.p_p + c.p_0)
 
-
-    print((2 * c.pi* c.radius**3 *f2*c.p_0/2 * velocity_time_average)/ g, sep='\n')
-    print()
-    # exit() 
+    # print((2 * c.pi* c.radius**3 * f2*c.p_0/2 * velocity_time_average)/ g, sep='\n')
+    # exit()
     #  This is too big by factor of 91.1250
 
-    
-    U = 2 * c.pi* c.radius**3 * ((f1/(3*c.p_0*c.c_0**2) * 1/2*pressure_square) - f2*c.p_0/2 * velocity_time_average )
+    U = 2 * c.pi* c.R**3 * ((f1/(3*c.p_0*c.c_0**2) * 1/2*pressure_square) - (f2*c.p_0/2 * velocity_time_average) )
     return U.permute(0,2,1)
 
 def gorkov_ratio(activations: Tensor, points: Tensor,board:Tensor|None=None, axis:str="XYZ", V:float=c.V, **params) -> Tensor:
@@ -53,7 +49,6 @@ def gorkov_ratio(activations: Tensor, points: Tensor,board:Tensor|None=None, axi
 
 
 board = TRANSDUCERS
-
 p = create_points(1,1)
 x = kd_solver(p, board=board)
 x = add_lev_sig(x)

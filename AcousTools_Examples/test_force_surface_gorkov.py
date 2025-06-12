@@ -28,8 +28,8 @@ path = "../BEMMedia"
 cache = True
 
 start_d = wavelength/32
-max_d = wavelength/10
-N = 16
+max_d = wavelength * 2/3
+N = 32
 
 U_forces_x = []
 U_forces_y = []

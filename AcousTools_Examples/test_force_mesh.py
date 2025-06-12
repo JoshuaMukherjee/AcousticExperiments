@@ -163,7 +163,7 @@ plt.plot(diameters, forces_z, color='blue')
 plt.xlabel('Diameter (m)')
 plt.ylabel('Force (N)')
 
-PLT = False
+PLT = True
 if PLT:
 
     plt.hlines(U_force[:,0], color='red', linestyles=':', xmin=start, xmax=start+max_pos)
