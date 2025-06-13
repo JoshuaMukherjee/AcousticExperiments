@@ -28,8 +28,8 @@ path = "../BEMMedia"
 cache = True
 
 start_d = wavelength/32
-max_d = wavelength * 2/3
-N = 16
+max_d = wavelength /2
+N = 64
 
 U_forces_x = []
 U_forces_y = []
@@ -77,7 +77,7 @@ for i in range(N):
     U_forces_y.append(U_force[1])
     U_forces_z.append(U_force[2])
 
-    dim = 3*wavelength*(random.random()+1)
+    dim = 3*wavelength
     A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
                                                         diameter=dim, use_cache_H=cache).squeeze().detach()
     

@@ -2,7 +2,7 @@ if __name__ == "__main__":
     from acoustools.Utilities import create_points, add_lev_sig, propagate_abs
     from acoustools.Solvers import wgs
     from acoustools.Visualiser import Visualise, ABC
-    from acoustools.Gorkov import gorkov_analytical, gorkov_fin_diff, gorkov_autograd
+    from acoustools.Force import compute_force, force_fin_diff
 
     import torch
 
@@ -12,5 +12,5 @@ if __name__ == "__main__":
 
 
     Visualise(*ABC(0.01, origin=p), x, points=p, 
-              colour_functions=[propagate_abs,gorkov_analytical, gorkov_fin_diff, gorkov_autograd], 
-              clr_labels=['Pressure','Analytical Gor\'kov', 'Finite Differences Gor\'kov', 'Autodiff Gor\'kov'], res=(200,200),link_ax=[1,2,3])
+              colour_functions=[propagate_abs,compute_force], 
+              clr_labels=['Pressure','Analytical Force'], res=(200,200),link_ax=None)
