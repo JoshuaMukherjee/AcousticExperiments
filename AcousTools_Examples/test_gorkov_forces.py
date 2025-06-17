@@ -47,4 +47,4 @@ print(fx_fd, fy_fd, fz_fd, (t4-t3)/1e9, sep='\t')
 
 r = 50
 
-Visualise(*ABC(0.02, origin=p),x, colour_functions=[propagate_abs,force, force_fd, ratio], res = (r,r), link_ax=[1,2], clr_labels=['Pressure (Pa)', 'Analytic Force (N)', 'Finite Difference Froce (N)', 'Difference'])
+Visualise(*ABC(0.02, origin=p, plane='xy'),x, colour_functions=[propagate_abs,force, force_fd, ratio], res = (r,r), link_ax=[1,2], clr_labels=['Pressure (Pa)', 'Analytic Force (N)', 'Finite Difference Froce (N)', 'Difference'])

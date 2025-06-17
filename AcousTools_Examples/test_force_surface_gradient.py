@@ -14,7 +14,7 @@ x = wgs(pt, board=board)
 
 start_pos = -2 * wavelength
 end_pos = 2 * wavelength
-N = 64
+N = 16
 
 d = wavelength/4
 

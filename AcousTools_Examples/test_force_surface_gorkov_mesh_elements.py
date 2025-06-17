@@ -72,9 +72,9 @@ for i in range(N):
     
     print(A_force[0,INDEX])
 
-    A_forces_x.append(A_force[0,INDEX])
-    A_forces_y.append(A_force[1,INDEX])
-    A_forces_z.append(A_force[2,INDEX])
+    A_forces_x.append(A_force[0,INDEX].cpu().detach())
+    A_forces_y.append(A_force[1,INDEX].cpu().detach())
+    A_forces_z.append(A_force[2,INDEX].cpu().detach())
 
  
 

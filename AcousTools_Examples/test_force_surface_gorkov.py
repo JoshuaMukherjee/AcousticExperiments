@@ -7,7 +7,7 @@ from acoustools.BEM import BEM_compute_force, compute_E, propagate_BEM_pressure,
 from acoustools.Visualiser import ABC, Visualise
 
 
-import torch, random
+import torch, random, math
 import matplotlib.pyplot as plt
 
 # torch.random.manual_seed(1)
@@ -29,7 +29,7 @@ cache = True
 
 start_d = wavelength/32
 max_d = wavelength /2
-N = 64
+N = 32
 
 U_forces_x = []
 U_forces_y = []
@@ -45,7 +45,7 @@ A_forces_z = []
 
 ds = []
 
-diameters = torch.linspace(start_d, max_d, steps=N)
+diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
 
 for i in range(N):
     print(i,end='\r')
@@ -73,17 +73,17 @@ for i in range(N):
     U_force = compute_force(x, com, board, V=v).squeeze().detach()
     # U_force_BEM = BEM_compute_force(x,com, board, scatterer=sphere, path=path, H=H, V=v).squeeze().detach()
 
-    U_forces_x.append(U_force[0])
-    U_forces_y.append(U_force[1])
-    U_forces_z.append(U_force[2])
+    U_forces_x.append(U_force[0].cpu().detach())
+    U_forces_y.append(U_force[1].cpu().detach())
+    U_forces_z.append(U_force[2].cpu().detach())
 
     dim = 3*wavelength
     A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
                                                         diameter=dim, use_cache_H=cache).squeeze().detach()
     
-    A_forces_x.append(A_force[0])
-    A_forces_y.append(A_force[1])
-    A_forces_z.append(A_force[2])
+    A_forces_x.append(A_force[0].cpu().detach())
+    A_forces_y.append(A_force[1].cpu().detach())
+    A_forces_z.append(A_force[2].cpu().detach())
 
     # U_forces_BEM_x.append(U_force_BEM[0])
     # U_forces_BEM_y.append(U_force_BEM[1])
