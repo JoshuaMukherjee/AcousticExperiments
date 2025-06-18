@@ -100,7 +100,7 @@ for i in range(points.shape[2]):
     com = get_centre_of_mass_as_points(sphere)
     
 
-    force = force_mesh_surface(x, sphere, board)
+    force = force_mesh_surface(x, sphere, board, path=path)
     force_BEM = compute_force(x, p, board)
 
     print(p,force)
