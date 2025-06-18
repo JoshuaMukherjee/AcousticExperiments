@@ -16,7 +16,7 @@ start_pos = -2 * wavelength
 end_pos = 2 * wavelength
 N = 16
 
-d = wavelength/4
+d = wavelength/2
 
 
 ps = []
