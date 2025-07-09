@@ -4,7 +4,7 @@ from acoustools.Solvers import wgs
 
 board = TRANSDUCERS
 
-lev = LevitatorController(ids = (999,1000))
+lev = LevitatorController(ids = (53,73))
 
 p = create_points(1,1,0,0,0)
 
