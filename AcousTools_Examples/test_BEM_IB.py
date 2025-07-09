@@ -4,7 +4,7 @@ if __name__ == '__main__':
     from acoustools.Optimise.Objectives import target_pressure_mse_objective, propagate_abs_sum_objective
     from acoustools.Optimise.Constraints import constrain_phase_only, constrant_normalise_amplitude
     from acoustools.Visualiser import Visualise,ABC
-    from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter
+    from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter, centre_scatterer, get_edge_data
     from acoustools.BEM import propagate_BEM_pressure, compute_E
     from acoustools.Constants import wavelength
 
@@ -23,12 +23,14 @@ if __name__ == '__main__':
     # scatterer = load_multiple_scatterers(paths,dys=[-0.06],dzs=[-0.03])
 
 
-    paths = [path+"/Sphere-solidworks-lam2.stl"]
+    paths = [path+"/Sphere-lam2.stl"]
     scatterer = load_multiple_scatterers(paths)
+    centre_scatterer(scatterer)
     print(scatterer.bounds())
-    d = wavelength/2
+    d = wavelength*2 * 1.05
     # d = wavelength+0.001
     scale_to_diameter(scatterer,d)
+    get_edge_data(scatterer)
 
 
     p = create_points(1,1, y=0,x=0,z=0)
