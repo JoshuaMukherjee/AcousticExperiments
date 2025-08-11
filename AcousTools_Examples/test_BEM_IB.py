@@ -11,17 +11,13 @@ if __name__ == '__main__':
     import torch
 
     
-    def propagate_abs_sum_objective_BEM(transducer_phases, points, board, targets, **objective_params):
-        scatterer = objective_params['scatterer']
-        E = objective_params['E']
-        return torch.sum(propagate_BEM_pressure(transducer_phases,points,scatterer=scatterer,board=board,E=E),dim=1).squeeze(0)
-
     board = TOP_BOARD
 
     path = "../BEMMedia"
     # paths = [path+"/Sphere-lam2.stl"]   
     # scatterer = load_multiple_scatterers(paths,dys=[-0.06],dzs=[-0.03])
 
+    p_ref = 20 * 0.17
 
     paths = [path+"/Sphere-lam2.stl"]
     scatterer = load_multiple_scatterers(paths)
@@ -35,7 +31,7 @@ if __name__ == '__main__':
 
     p = create_points(1,1, y=0,x=0,z=0)
 
-    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=True)
+    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref)
 
     x = iterative_backpropagation(p,A=E)
 
@@ -45,5 +41,5 @@ if __name__ == '__main__':
     # normal = (0,1,0)
     # origin = (0,0,0)
 
-    Visualise(*ABC(0.03), x, points=p,vmax=5000,colour_functions=[propagate_BEM_pressure], res=(150,150),
-              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":True }])
+    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(150,150),
+              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref }])
