@@ -1,4 +1,4 @@
-from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propagate_abs, transducers
+from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propagate_abs, transducers, BOTTOM_BOARD
 from acoustools.Force import compute_force
 from acoustools.Solvers import wgs
 from acoustools.Constants import wavelength, pi
