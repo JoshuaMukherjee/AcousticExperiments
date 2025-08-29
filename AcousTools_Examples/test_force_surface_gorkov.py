@@ -1,6 +1,6 @@
 from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propagate_abs, transducers, BOTTOM_BOARD
 from acoustools.Force import compute_force
-from acoustools.Solvers import wgs
+from acoustools.Solvers import wgs, translate_hologram
 from acoustools.Constants import wavelength, pi
 from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer
 from acoustools.BEM import BEM_compute_force, compute_E, propagate_BEM_pressure, force_mesh_surface
@@ -20,6 +20,7 @@ p = create_points(1,1, max_pos=wavelength/3, min_pos=-wavelength/3)
 
 x = wgs(p, board=board)
 x = add_lev_sig(x, board=board, board_size=M**2)
+x =translate_hologram(x, dz=0.01)
 
 # Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board}])
 
@@ -49,7 +50,7 @@ diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
 
 for i in range(N):
     print(i,end='\r')
-    # d = start_d + (max_d/N)*i * 1.01
+    # d = start_d + (max_d/N)*i * 1.010
     # d = max_d * 1.01
     d = diameters[i]
     v = 4/3 * pi * (d/2)**3
@@ -77,7 +78,7 @@ for i in range(N):
     U_forces_y.append(U_force[1].cpu().detach())
     U_forces_z.append(U_force[2].cpu().detach())
 
-    dim = 3*wavelength
+    dim = 0.5*wavelength + d.item()
     A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
                                                         diameter=dim, use_cache_H=cache).squeeze().detach()
     
