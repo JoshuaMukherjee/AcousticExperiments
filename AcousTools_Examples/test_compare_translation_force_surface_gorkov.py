@@ -129,7 +129,7 @@ plt.plot(ARFxs,c='r', label='$F_x$',linestyle=':')
 plt.plot(ARFys,c='g', label='$F_y$',linestyle=':')
 plt.plot(ARFzs,c='b', label='$F_z$',linestyle=':')
 
-plt.plot([i * max(ARFzs) for i in ratio_zs])
+# plt.plot([i * max(ARFzs) for i in ratio_zs])
 
 print([a/b for a,b in zip(Fzs, ARFzs)])
 
