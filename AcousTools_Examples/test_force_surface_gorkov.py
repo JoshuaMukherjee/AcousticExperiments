@@ -15,22 +15,26 @@ torch.set_printoptions(precision=8)
 
 M = 16
 board = transducers(M)
+# board=BOTTOM_BOARD
 # p = create_points(1,1,x=wavelength/8, y=wavelength/8, z=wavelength/8)
-p = create_points(1,1, max_pos=wavelength/3, min_pos=-wavelength/3)
+p = create_points(1,1, 0,0,0)
 
 x = wgs(p, board=board)
 x = add_lev_sig(x, board=board, board_size=M**2)
-x =translate_hologram(x, dz=0.01)
+x =translate_hologram(x, dz=0.001)
 
-# Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board}])
+p_ref = 12* (2.214 / 10) 
+
+# Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board, 'p_ref':p_ref}])
 
 path = "../BEMMedia"
 
-cache = True
 
-start_d = wavelength/32
-max_d = wavelength /2
-N = 32
+cache = False
+
+start_d =0.00001
+max_d = wavelength
+N = 64
 
 U_forces_x = []
 U_forces_y = []
@@ -46,7 +50,9 @@ A_forces_z = []
 
 ds = []
 
-diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
+# diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
+diameters = torch.linspace(wavelength, 2*wavelength, N)
+
 
 for i in range(N):
     print(i,end='\r')
@@ -55,32 +61,30 @@ for i in range(N):
     d = diameters[i]
     v = 4/3 * pi * (d/2)**3
 
-    sphere_pth =  path+"/Sphere-solidworks-lam2.stl"
+    sphere_pth =  path+"/Sphere-lam2.stl"
     sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
     scale_to_diameter(sphere,d)
     centre_scatterer(sphere)
     com = get_centre_of_mass_as_points(sphere)
 
-    E,F,G,H = compute_E(sphere, com, board,path=path, return_components=True, use_cache_H=cache)
+    E,F,G,H = compute_E(sphere, com, board,path=path, return_components=True, use_cache_H=cache, p_ref=p_ref)
+    Visualise(*ABC(0.02),x,colour_functions=[propagate_BEM_pressure], colour_function_args=[{'board':board,'scatterer':sphere,'H':H, 'use_cache_H':cache, 'p_ref':p_ref}], res=(100,100))
 
 
     ds.append(d)
-
-
-
-# V = c.V
+    # V = c.V
 
     
-    U_force = compute_force(x, com, board, V=v).squeeze().detach()
+    U_force = compute_force(x, com, board, V=v, p_ref=p_ref).squeeze().detach()
     # U_force_BEM = BEM_compute_force(x,com, board, scatterer=sphere, path=path, H=H, V=v).squeeze().detach()
 
     U_forces_x.append(U_force[0].cpu().detach())
     U_forces_y.append(U_force[1].cpu().detach())
     U_forces_z.append(U_force[2].cpu().detach())
 
-    dim = 0.5*wavelength + d.item()
+    dim = 0.2*wavelength + d.item()
     A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
-                                                        diameter=dim, use_cache_H=cache).squeeze().detach()
+                                                        diameter=dim, use_cache_H=cache, p_ref=p_ref).squeeze().detach()
     
     A_forces_x.append(A_force[0].cpu().detach())
     A_forces_y.append(A_force[1].cpu().detach())
@@ -100,7 +104,7 @@ for i in range(N):
 
     # exit()
 
-
+ds = [d/(wavelength) for d in ds]
 
 plt.plot(ds, U_forces_x, color='r', linestyle=':', label=r'${-\nabla_x U}$')
 plt.plot(ds, U_forces_y, color='g', linestyle=':', label=r'${-\nabla_y U}$')
@@ -118,7 +122,9 @@ plt.plot(ds, A_forces_z, color='b', label='$F_z$')
 plt.legend()
 
 plt.ylabel('Force (N)')
-plt.xlabel('Particle Diameter (m)')
+plt.xlabel('Particle Diameter ($\lambda$)')
+
+plt.ylim(-5e-3, 5e-3)
 
 plt.show()
 
