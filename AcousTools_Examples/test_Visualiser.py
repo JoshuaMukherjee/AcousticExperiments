@@ -13,8 +13,8 @@ if __name__ == "__main__":
     B = torch.tensor((0.09,0, 0.09)).to(device)
     C = torch.tensor((-0.09,0, -0.09)).to(device)
     
-    res = 400
+    res = 200
     start = time.time_ns()
-    Visualise(A,B,C, x, res=(res,res), points=p, show=False)
+    Visualise(A,B,C, x, res=(res,res), points=p, show=True)
     end = time.time_ns()
     print((end-start)/1e9)
