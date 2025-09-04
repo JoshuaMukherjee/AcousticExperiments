@@ -1,10 +1,10 @@
 from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propagate_abs, transducers, BOTTOM_BOARD
 from acoustools.Force import compute_force
 from acoustools.Solvers import wgs, translate_hologram
-from acoustools.Constants import wavelength, pi
+from acoustools.Constants import wavelength, pi, P_ref as PREF
 from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer
 from acoustools.BEM import BEM_compute_force, compute_E, propagate_BEM_pressure, force_mesh_surface
-from acoustools.Visualiser import ABC, Visualise
+from acoustools.Visualiser import ABC, Visualise,force_quiver_3d
 
 
 import torch, random, math
@@ -24,6 +24,7 @@ x = add_lev_sig(x, board=board, board_size=M**2)
 x =translate_hologram(x, dz=0.001)
 
 p_ref = 12* (2.214 / 10) 
+p_ref = PREF
 
 # Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board, 'p_ref':p_ref}])
 
@@ -32,9 +33,8 @@ path = "../BEMMedia"
 
 cache = False
 
-start_d =0.00001
-max_d = wavelength
-N = 64
+# start_d =0.00001
+# max_d = wavelength
 
 U_forces_x = []
 U_forces_y = []
@@ -50,8 +50,9 @@ A_forces_z = []
 
 ds = []
 
+N = 10
 # diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
-diameters = torch.linspace(wavelength, 2*wavelength, N)
+diameters = torch.linspace(wavelength*1.42, 1.44*wavelength, N)
 
 
 for i in range(N):
@@ -69,7 +70,10 @@ for i in range(N):
 
     E,F,G,H = compute_E(sphere, com, board,path=path, return_components=True, use_cache_H=cache, p_ref=p_ref)
     Visualise(*ABC(0.02),x,colour_functions=[propagate_BEM_pressure], colour_function_args=[{'board':board,'scatterer':sphere,'H':H, 'use_cache_H':cache, 'p_ref':p_ref}], res=(100,100))
-
+    # norms = get_normals_as_points(sphere)
+    # centres = get_centres_as_points(sphere)
+    # force_quiver_3d(centres, norms[:,0], norms[:,1], norms[:,2], scale=0.001)
+    exit()
 
     ds.append(d)
     # V = c.V
@@ -114,6 +118,10 @@ plt.plot(ds, U_forces_z, color='b', linestyle=':', label=r'${-\nabla_z U}$')
 plt.plot(ds, A_forces_x, color='r', label='$F_x$')
 plt.plot(ds, A_forces_y, color='g', label='$F_y$')
 plt.plot(ds, A_forces_z, color='b', label='$F_z$')
+
+plt.scatter(ds, A_forces_x, color='r')
+plt.scatter(ds, A_forces_y, color='g')
+plt.scatter(ds, A_forces_z, color='b')
 
 # plt.plot(ds, U_forces_BEM_x, color='r', linestyle=':')
 # plt.plot(ds, U_forces_BEM_y, color='g', linestyle=':')

@@ -23,7 +23,8 @@ if __name__ == '__main__':
     scatterer = load_multiple_scatterers(paths)
     centre_scatterer(scatterer)
     print(scatterer.bounds())
-    d = wavelength*2 * 1.05
+    # d = wavelength*2 * 1.05
+    d = wavelength*1.42
     # d = wavelength+0.001
     scale_to_diameter(scatterer,d)
     get_edge_data(scatterer)
@@ -40,6 +41,8 @@ if __name__ == '__main__':
     # C = torch.tensor((-0.09,0, -0.09))
     # normal = (0,1,0)
     # origin = (0,0,0)
+
+
 
     Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(150,150),
               colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref }])
