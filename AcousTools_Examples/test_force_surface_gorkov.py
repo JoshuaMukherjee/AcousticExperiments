@@ -24,7 +24,7 @@ x = add_lev_sig(x, board=board, board_size=M**2)
 x =translate_hologram(x, dz=0.001)
 
 p_ref = 12* (2.214 / 10) 
-p_ref = PREF
+# p_ref = PREF
 
 # Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board, 'p_ref':p_ref}])
 
@@ -50,9 +50,9 @@ A_forces_z = []
 
 ds = []
 
-N = 10
+N = 200
 # diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
-diameters = torch.linspace(wavelength*1.42, 1.44*wavelength, N)
+diameters = torch.linspace(0.0001, 3*wavelength, N)
 
 
 for i in range(N):
@@ -62,18 +62,18 @@ for i in range(N):
     d = diameters[i]
     v = 4/3 * pi * (d/2)**3
 
-    sphere_pth =  path+"/Sphere-lam2.stl"
+    sphere_pth =  path+"/Sphere-solidworks-lam2.stl"
     sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
     scale_to_diameter(sphere,d)
     centre_scatterer(sphere)
     com = get_centre_of_mass_as_points(sphere)
 
     E,F,G,H = compute_E(sphere, com, board,path=path, return_components=True, use_cache_H=cache, p_ref=p_ref)
-    Visualise(*ABC(0.02),x,colour_functions=[propagate_BEM_pressure], colour_function_args=[{'board':board,'scatterer':sphere,'H':H, 'use_cache_H':cache, 'p_ref':p_ref}], res=(100,100))
+    # Visualise(*ABC(0.02),x,colour_functions=[propagate_BEM_pressure], colour_function_args=[{'board':board,'scatterer':sphere,'H':H, 'use_cache_H':cache, 'p_ref':p_ref}], res=(100,100))
     # norms = get_normals_as_points(sphere)
     # centres = get_centres_as_points(sphere)
     # force_quiver_3d(centres, norms[:,0], norms[:,1], norms[:,2], scale=0.001)
-    exit()
+    # exit()
 
     ds.append(d)
     # V = c.V
@@ -86,7 +86,7 @@ for i in range(N):
     U_forces_y.append(U_force[1].cpu().detach())
     U_forces_z.append(U_force[2].cpu().detach())
 
-    dim = 0.2*wavelength + d.item()
+    dim = 3*wavelength + d.item()
     A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
                                                         diameter=dim, use_cache_H=cache, p_ref=p_ref).squeeze().detach()
     
@@ -108,20 +108,20 @@ for i in range(N):
 
     # exit()
 
-ds = [d/(wavelength) for d in ds]
+rs = [d/(2*wavelength) for d in ds]
 
-plt.plot(ds, U_forces_x, color='r', linestyle=':', label=r'${-\nabla_x U}$')
-plt.plot(ds, U_forces_y, color='g', linestyle=':', label=r'${-\nabla_y U}$')
-plt.plot(ds, U_forces_z, color='b', linestyle=':', label=r'${-\nabla_z U}$')
+plt.plot(rs, U_forces_x, color='r', linestyle=':', label=r'${-\nabla_x U}$')
+plt.plot(rs, U_forces_y, color='g', linestyle=':', label=r'${-\nabla_y U}$')
+plt.plot(rs, U_forces_z, color='b', linestyle=':', label=r'${-\nabla_z U}$')
 
 
-plt.plot(ds, A_forces_x, color='r', label='$F_x$')
-plt.plot(ds, A_forces_y, color='g', label='$F_y$')
-plt.plot(ds, A_forces_z, color='b', label='$F_z$')
+plt.plot(rs, A_forces_x, color='r', label='$F_x$')
+plt.plot(rs, A_forces_y, color='g', label='$F_y$')
+plt.plot(rs, A_forces_z, color='b', label='$F_z$')
 
-plt.scatter(ds, A_forces_x, color='r')
-plt.scatter(ds, A_forces_y, color='g')
-plt.scatter(ds, A_forces_z, color='b')
+# plt.scatter(ds, A_forces_x, color='r')
+# plt.scatter(ds, A_forces_y, color='g')
+# plt.scatter(ds, A_forces_z, color='b')
 
 # plt.plot(ds, U_forces_BEM_x, color='r', linestyle=':')
 # plt.plot(ds, U_forces_BEM_y, color='g', linestyle=':')
@@ -130,7 +130,7 @@ plt.scatter(ds, A_forces_z, color='b')
 plt.legend()
 
 plt.ylabel('Force (N)')
-plt.xlabel('Particle Diameter ($\lambda$)')
+plt.xlabel('Particle Radius ($\lambda$)')
 
 plt.ylim(-5e-3, 5e-3)
 
