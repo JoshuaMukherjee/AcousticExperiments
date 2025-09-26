@@ -1,10 +1,10 @@
 if __name__ == '__main__':
     from acoustools.Solvers import iterative_backpropagation
-    from acoustools.Utilities import create_points, add_lev_sig, generate_pressure_targets, TOP_BOARD, device
+    from acoustools.Utilities import create_points, add_lev_sig, generate_pressure_targets, TOP_BOARD, device, propagate_abs
     from acoustools.Optimise.Objectives import target_pressure_mse_objective, propagate_abs_sum_objective
     from acoustools.Optimise.Constraints import constrain_phase_only, constrant_normalise_amplitude
     from acoustools.Visualiser import Visualise,ABC
-    from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter, centre_scatterer, get_edge_data
+    from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter, centre_scatterer, get_edge_data, get_centre_of_mass_as_points
     from acoustools.BEM import propagate_BEM_pressure, compute_E
     from acoustools.Constants import wavelength,k
 
@@ -23,16 +23,18 @@ if __name__ == '__main__':
     scatterer = load_multiple_scatterers(paths)
     centre_scatterer(scatterer)
     print(scatterer.bounds())
-    d = wavelength*2.1123
-    # d = 0.02341
+    d = wavelength*2
+    # d = 0.0234
     # d = wavelength+0.001
     scale_to_diameter(scatterer,d)
     get_edge_data(scatterer)
 
+    a = get_centre_of_mass_as_points(scatterer)
+    c=1j
 
     p = create_points(1,1, y=0,x=0,z=0)
-    beta = 10
-    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref, betas=beta)
+
+    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,a=a,c=c)
 
     x = iterative_backpropagation(p,A=E)
 
@@ -44,6 +46,10 @@ if __name__ == '__main__':
 
 
 
-    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure, propagate_BEM_pressure], res=(150,150),
-              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "betas":beta },
-                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "betas":0 }], vmax=8000)
+    # Visualise(*ABC(0.1), x, points=p,colour_functions=[propagate_abs], res=(200,200),
+    #           colour_function_args=[{"board":board}], vmax=8000)
+
+
+    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure, propagate_BEM_pressure], res=(600,600),
+              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "a":a, "c":c },
+                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, }], vmax=8000)

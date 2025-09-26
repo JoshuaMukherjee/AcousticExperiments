@@ -24,7 +24,7 @@ if __name__ == '__main__':
     centre_scatterer(scatterer)
     print(scatterer.bounds())
     d = wavelength*2
-    # d = 0.02341
+    # d = 0.0234
     # d = wavelength+0.001
     scale_to_diameter(scatterer,d)
     get_edge_data(scatterer)
@@ -44,5 +44,5 @@ if __name__ == '__main__':
 
 
 
-    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(150,150),
+    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(200,200),
               colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref }], vmax=8000)

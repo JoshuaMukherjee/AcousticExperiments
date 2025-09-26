@@ -19,20 +19,21 @@ if __name__ == '__main__':
 
     p_ref = 20 * 0.17
 
-    paths = [path+"/Sphere-lam2.stl"]
+    paths = [path+"/Flat-lam2.stl"]
     scatterer = load_multiple_scatterers(paths)
     centre_scatterer(scatterer)
     print(scatterer.bounds())
     d = wavelength*2.1123
     # d = 0.02341
     # d = wavelength+0.001
-    scale_to_diameter(scatterer,d)
+    # scale_to_diameter(scatterer,d)
     get_edge_data(scatterer)
 
 
-    p = create_points(1,1, y=0,x=0,z=0)
+    p = create_points(1,1, y=0,x=0,z=0.01)
     beta = 10
-    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref, betas=beta)
+    alphas = 0.5
+    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref)
 
     x = iterative_backpropagation(p,A=E)
 
@@ -45,5 +46,5 @@ if __name__ == '__main__':
 
 
     Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure, propagate_BEM_pressure], res=(150,150),
-              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "betas":beta },
-                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "betas":0 }], vmax=8000)
+              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "betas":beta, "alphas":alphas },
+                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref}], vmax=8000)

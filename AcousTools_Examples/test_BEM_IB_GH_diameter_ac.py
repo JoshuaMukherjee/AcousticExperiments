@@ -4,9 +4,9 @@ if __name__ == '__main__':
     from acoustools.Optimise.Objectives import target_pressure_mse_objective, propagate_abs_sum_objective
     from acoustools.Optimise.Constraints import constrain_phase_only, constrant_normalise_amplitude
     from acoustools.Visualiser import Visualise,ABC
-    from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter, centre_scatterer, get_edge_data
+    from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter, centre_scatterer, get_edge_data, get_centre_of_mass_as_points
     from acoustools.BEM import propagate_BEM_pressure, compute_E, propagate_BEM_phase
-    from acoustools.Constants import wavelength,k
+    from acoustools.Constants import wavelength
 
     import torch
 
@@ -57,43 +57,45 @@ if __name__ == '__main__':
         scale_to_diameter(scatterer,d)
         # get_edge_data(scatterer)
 
-        E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True)
+        a = get_centre_of_mass_as_points(scatterer)
+        c=-1j
+
+        E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True, a=a,c=c)
 
 
-        pressure = propagate_BEM_pressure(x, p2, scatterer, board=board, H=H, path=path, p_ref=p_ref)
+        pressure = propagate_BEM_pressure(x, p2, scatterer, board=board, H=H, path=path, p_ref=p_ref, a=a,c=c)
         pressures.append(pressure.item())
 
-        phase = propagate_BEM_phase(x, p2, scatterer, board=board, H=H, path=path, p_ref=p_ref)
+        phase = propagate_BEM_phase(x, p2, scatterer, board=board, H=H, path=path, p_ref=p_ref, a=a,c=c)
         phases.append((phase).item())
 
         H_phase = torch.angle(H@x)[:,ID,:].item()
         H_phases.append(H_phase)
 
-        diameters.append(d.item())
+        diameters.append(d.item()/ wavelength)
         circumferences.append((3.1415*d.item())/ wavelength)
 
 radii = [d/2 for d in diameters]
-kr = [k*r for r in radii]
 
 
 import matplotlib.pyplot as plt
 
 plt.subplot(3,1,1)
-plt.plot(kr, pressures)
+plt.plot(radii, pressures)
 plt.ylabel(f"Pressure @ (0,0,-{p2[:,2].item()}m) (Pa)")
-# plt.xlabel("Sphere Radius ($\lambda$)")
-plt.xlabel("kr")
+plt.xlabel("Sphere Radius ($\lambda$)")
+
 plt.subplot(3,1,2)
 
-plt.plot(kr, phases)
+plt.plot(radii, phases)
 plt.ylabel(f"Phase @ (0,0,-{p2[:,2].item()}m) (rad)")
-plt.xlabel("kr")
+plt.xlabel("Sphere Radius ($\lambda$)")
 
 
 plt.subplot(3,1,3)
 
-plt.plot(kr, H_phases)
+plt.plot(radii, H_phases)
 # plt.ylabel(f"$\Sigma$ arg(Hx) @ (0,0,-{p2[:,2].item()}m) (rad)")
-# plt.xlabel("Sphere Radius ($\lambda$)")
-plt.xlabel("kr")
+plt.xlabel("Sphere Radius ($\lambda$)")
+
 plt.show()
