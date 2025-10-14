@@ -8,8 +8,8 @@ if __name__ == "__main__":
 
     import torch
 
-    torch.random.manual_seed(1)
-    torch.set_printoptions(linewidth=300)
+    # torch.random.manual_seed(1)
+    torch.set_printoptions( precision=4)
 
 
     def return_mixed_points(points,stepsize=0.000135156253, stepsize_x=None,stepsize_y=None,stepsize_z=None ):
@@ -76,35 +76,61 @@ if __name__ == "__main__":
 
         F = forward_model_batched(points,transducers=board)
         Fx, Fy, Fz = forward_model_grad(points,transducers=board)
+
         Fxx, Fyy, Fzz = forward_model_second_derivative_unmixed(points,transducers=board)
         Fxy, Fxz, Fyz = forward_model_second_derivative_mixed(points,transducers=board)
 
         stepsize = 0.000135156253
 
         fin_diff_points = get_finite_diff_points_all_axis(points,stepsize=stepsize)
+        print(fin_diff_points)
+
         pressure_points = propagate(activations, fin_diff_points)
+        print(pressure_points)
         pressure = pressure_points[:,:N]
         pressure_fin_diff = pressure_points[:,N:]
         # split = torch.reshape(pressure_fin_diff,(B,2, ((2*D))*N // 2))
         split = torch.reshape(pressure_fin_diff,(B,2, -1))
+        print(split)
         grad = (split[:,0,:] - split[:,1,:]) / (2*stepsize)
+        grad = (grad)
 
-        p  = torch.abs(F@activations)
+        p  = (F@activations)
 
-        P_a = torch.autograd.grad (p, points, retain_graph=True, create_graph=True)[0]   # creates graph of first derivative
-        pa = torch.abs(P_a)
+        P_a = torch.autograd.grad (p, points, retain_graph=True, create_graph=True, grad_outputs=torch.ones((1,1,1)) + 0j)[0]   # creates graph of first derivative
+        pa = (P_a)
         p_angle = torch.angle(P_a)
 
         print("p", p.item())
-        print("Grad","Analytical","Finite Differences","Autograd",sep="\t")
+        print("Grad","Analytical","Finite Differences","Ratio",sep="\t")
         Px  = (Fx@activations)
-        print("px", Px.item(), (grad[0,0]).item(),pa[:,0].item(),sep="\t")
-        Py  = (Fy@activations)
-        print("py", Py.item(),(grad[0,1]).item(),pa[:,1].item(),sep="\t")
-        Pz  = (Fz@activations)
-        print("pz", Pz.item(), (grad[0,2]).item(),pa[:,2].item(),sep="\t")
+        print("px pressure", torch.abs(Px).item(), torch.abs(grad[0,0]).item(), torch.abs(Px).item() / torch.abs(grad[0,0]).item(),sep="\t")
         
-        print()
+        Py  = (Fy@activations)
+        print("py pressure", torch.abs(Py).item(), torch.abs(grad[0,1]).item(), torch.abs(Py).item() / torch.abs(grad[0,1]).item(),sep="\t")
+        
+        Pz  = (Fz@activations)
+        print("pz pressure", torch.abs(Pz).item(), torch.abs(grad[0,2]).item(), torch.abs(Pz).item() / torch.abs(grad[0,2]).item(),sep="\t")
+        
+
+        print("px phase", torch.angle(Px).item(), torch.angle(grad[0,0]).item(), torch.angle(Px).item() / torch.angle(grad[0,0]).item(),sep="\t")
+        print("py phase", torch.angle(Py).item(), torch.angle(grad[0,1]).item(), torch.angle(Py).item() / torch.angle(grad[0,1]).item(),sep="\t")
+        print("pz phase", torch.angle(Pz).item(), torch.angle(grad[0,2]).item(), torch.angle(Pz).item() / torch.angle(grad[0,2]).item(),sep="\t")
+
+        # print("\n\n")
+        # print("Grad","Analytical","Autograd","Ratio",sep="\t")
+        # Px  = (Fx@activations)
+        # print("px pressure", torch.abs(Px).item(), torch.abs(pa[0,0]).item(), torch.abs(Px).item() / torch.abs(pa[0,0]).item(),sep="\t")
+        # Py  = (Fy@activations)
+        # print("py pressure", torch.abs(Py).item(), torch.abs(pa[0,1]).item(), torch.abs(Py).item() / torch.abs(pa[0,1]).item(),sep="\t")
+        # Pz  = (Fz@activations)
+        # print("pz pressure", torch.abs(Pz).item(), torch.abs(pa[0,2]).item(), torch.abs(Pz).item() / torch.abs(pa[0,2]).item(),sep="\t")
+
+        # print("px phase", torch.angle(Px).item(), torch.angle(pa[0,0]).item(), torch.angle(Px).item() / torch.angle(pa[0,0]).item(),sep="\t")
+        # print("py phase", torch.angle(Py).item(), torch.angle(pa[0,1]).item(), torch.angle(Py).item() / torch.angle(pa[0,1]).item(),sep="\t")
+        # print("pz phase", torch.angle(Pz).item(), torch.angle(pa[0,2]).item(), torch.angle(Pz).item() / torch.angle(pa[0,2]).item(),sep="\t")
+        
+        # print()
 
 
         print("grad", 'Analytical', 'Finite Differences', 'Ratio', sep='\t')

@@ -6,7 +6,7 @@ if __name__ == '__main__':
     from acoustools.Visualiser import Visualise,ABC
     from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter, centre_scatterer, get_edge_data
     from acoustools.BEM import propagate_BEM_pressure, compute_E, propagate_BEM_phase
-    from acoustools.Constants import wavelength
+    from acoustools.Constants import wavelength, k, P_ref
 
     import torch
 
@@ -17,7 +17,7 @@ if __name__ == '__main__':
     # paths = [path+"/Sphere-lam2.stl"]   
     # scatterer = load_multiple_scatterers(paths,dys=[-0.06],dzs=[-0.03])
 
-    p_ref = 12 * 0.22
+    p_ref = P_ref
 
     paths = [path+"/Sphere-lam2.stl"]
     scatterer = load_multiple_scatterers(paths)
@@ -25,8 +25,7 @@ if __name__ == '__main__':
     print(scatterer.bounds())
     # d = wavelength*2 * 1.05
     # d = wavelength * 1.2345
-    d = wavelength * 2
-    # d = wavelength*2*0.71
+    # d = wavelength * 2
     # d = wavelength+0.001
     scale_to_diameter(scatterer,d)
     get_edge_data(scatterer)
@@ -35,13 +34,14 @@ if __name__ == '__main__':
     p = create_points(1,1, y=0,x=0,z=0)
     p2 = create_points(1,1,0,0,-0.002)
 
-    H_method = 'OLS'
-    E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True)
+    alpha = 1j/k
 
+
+    H_method = 'OLS'
+    E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True, BM_c=alpha)
 
 
     x = iterative_backpropagation(p, board=board)
-    x =translate_hologram(x, dz=0.001, board=board)
 
     # A = torch.tensor((-0.09,0, 0.09))
     # B = torch.tensor((0.09,0, 0.09))
@@ -49,27 +49,28 @@ if __name__ == '__main__':
     # normal = (0,1,0)
     # origin = (0,0,0)
     
-    def GH_prop(activations, points, scatterer, board, path,use_cache_H, p_ref, H=H ):
-        E,F,G,H = compute_E(scatterer, points,board=board, path=path, use_cache_H=use_cache_H, p_ref=p_ref, return_components=True, H=H)
+    def GH_prop(activations, points, scatterer, board, path,use_cache_H, p_ref, H=H,BM_c=None ):
+        E,F,G,H = compute_E(scatterer, points,board=board, path=path, use_cache_H=use_cache_H, p_ref=p_ref, return_components=True, H=H, BM_c=BM_c)
 
 
         pressures =  torch.abs(G@H@activations)
         return pressures
 
-    def GH_prop_phase(activations, points, scatterer, board, path,use_cache_H, p_ref, H=H ):
-        E,F,G,H = compute_E(scatterer, points,board=board, path=path, use_cache_H=use_cache_H, p_ref=p_ref, return_components=True, H=H)
+    def GH_prop_phase(activations, points, scatterer, board, path,use_cache_H, p_ref, H=H,BM_c=None ):
+        E,F,G,H = compute_E(scatterer, points,board=board, path=path, use_cache_H=use_cache_H, p_ref=p_ref, return_components=True, H=H, BM_c=BM_c)
 
 
-        pressures =  torch.angle(G@H@activations)
-        return pressures
+        phases =  torch.angle(G@H@activations)
+
+        return phases
 
 
 
-    Visualise(*ABC(0.03), x, points=p2,colour_functions=[propagate_BEM_pressure, GH_prop, propagate_abs, propagate_BEM_phase, GH_prop_phase, propagate_phase], 
-              res=(150,150), arangement=(2,3), cmaps=['hot','hot','hot', 'hsv', 'hsv', 'hsv'], link_ax=[0,1,2], vmax=8000,
-              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H }, 
-                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H  }, 
+    Visualise(*ABC(0.03), x,colour_functions=[propagate_BEM_pressure, GH_prop, propagate_abs, propagate_BEM_phase, GH_prop_phase, propagate_phase], 
+              res=(150,150), arangement=(2,3), cmaps=['hot','hot','hot', 'hsv', 'hsv', 'hsv'], link_ax=[0,1,2], 
+              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H,"BM_c":alpha }, 
+                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H,"BM_c":alpha  }, 
                                     {'board':board, "p_ref":p_ref},
-                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H }, 
-                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H  }, 
+                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H,"BM_c":alpha }, 
+                                    {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H,"BM_c":alpha  }, 
                                     {'board':board, "p_ref":p_ref}])

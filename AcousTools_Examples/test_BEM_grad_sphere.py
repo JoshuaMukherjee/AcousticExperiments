@@ -37,19 +37,19 @@ if __name__ == "__main__":
 
     Ex, Ey, Ez, Fx, Fy, Fz, Gx, Gy, Gz, H = BEM_forward_model_grad(p,sphere, board, path=path, use_cache_H=USE_CACHE, return_components=True)
 
-    PGx = torch.abs(Gx@H@x).squeeze()
-    PGy = torch.abs(Gy@H@x).squeeze()
-    PGz = torch.abs(Gz@H@x).squeeze()
+    PGx = (Gx@H@x).squeeze()
+    PGy = (Gy@H@x).squeeze()
+    PGz = (Gz@H@x).squeeze()
 
-    PEx = torch.abs(Ex@x).squeeze()
-    PEy = torch.abs(Ey@x).squeeze()
-    PEz = torch.abs(Ez@x).squeeze()
+    PEx = (Ex@x).squeeze()
+    PEy = (Ey@x).squeeze()
+    PEz = (Ez@x).squeeze()
 
    
 
-    PFx = torch.abs(Fx@x).squeeze()
-    PFy = torch.abs(Fy@x).squeeze()
-    PFz = torch.abs(Fz@x).squeeze()
+    PFx = (Fx@x).squeeze()
+    PFy = (Fy@x).squeeze()
+    PFz = (Fz@x).squeeze()
 
     # f_grad = torch.stack((Fx@x, Fy@x, Fz@x)).reshape((3,1))
 
@@ -62,6 +62,8 @@ if __name__ == "__main__":
     step = 0.000135156253 
     ps = get_finite_diff_points_all_axis(p, stepsize=step)
     Efd,Ffd,Gfd,Hfd = compute_E(sphere, ps, board=board, path=path, use_cache_H=USE_CACHE, return_components=True)
+
+    print(ps)
     
     x_fd = wgs(p, A=E)
     
@@ -74,10 +76,10 @@ if __name__ == "__main__":
     
     f_fd_grad = (Fx_fd_1-Fx_fd_2)/(2*step)
     print("F FD \t Analytical \t Ratio")
-    f_fd = torch.abs(f_fd_grad)
-    print(f_fd[0], PFx, f_fd[0]/PFx)
-    print(f_fd[1], PFy, f_fd[1]/PFy)
-    print(f_fd[2], PFz, f_fd[2]/PFz)
+    f_fd = (f_fd_grad)
+    print(f_fd[0].item(), PFx.item(), (f_fd[0]/PFx).item())
+    print(f_fd[1].item(), PFy.item(), (f_fd[1]/PFy).item())
+    print(f_fd[2].item(), PFz.item(), (f_fd[2]/PFz).item())
     print()
 
 
@@ -92,10 +94,10 @@ if __name__ == "__main__":
     
     gh_grad = (GHx_fd_1-GHx_fd_2)/(2*step)
     print("GH FD  \t Analytical \t Ratio")
-    gh_grad_abs = torch.abs(gh_grad)
-    print(gh_grad_abs[0], PGx, gh_grad_abs[0]/PGx)
-    print(gh_grad_abs[1], PGy, gh_grad_abs[1]/PGy)
-    print(gh_grad_abs[2], PGz, gh_grad_abs[2]/PGz)
+    gh_grad_abs = (gh_grad)
+    print(gh_grad_abs[0].item(), PGx.item(), (gh_grad_abs[0]/PGx).item())
+    print(gh_grad_abs[1].item(), PGy.item(), (gh_grad_abs[1]/PGy).item())
+    print(gh_grad_abs[2].item(), PGz.item(), (gh_grad_abs[2]/PGz).item())
     print()
 
 
@@ -108,7 +110,7 @@ if __name__ == "__main__":
     
     e_grad = (Efd_fd_1-Efd_fd_2)/(2*step)
     print('E FD')
-    e_grad_abs = torch.abs(e_grad)
+    e_grad_abs = (e_grad)
     print(e_grad_abs[0], PEx, e_grad_abs[0]/PEx)
     print(e_grad_abs[1], PEy, e_grad_abs[1]/PEy)
     print(e_grad_abs[2], PEz, e_grad_abs[2]/PEz)

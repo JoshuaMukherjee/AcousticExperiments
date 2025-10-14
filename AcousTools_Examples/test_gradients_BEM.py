@@ -11,7 +11,7 @@ if __name__ == "__main__":
     from acoustools.Visualiser import Visualise, ABC
     import torch, vedo
 
-    # torch.random.manual_seed(18)
+    torch.random.manual_seed(18)
 
     torch.set_printoptions(linewidth=400)
 

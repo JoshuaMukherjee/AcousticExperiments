@@ -1,5 +1,5 @@
 if __name__ == '__main__':
-    from acoustools.Solvers import iterative_backpropagation, translate_hologram
+    from acoustools.Solvers import iterative_backpropagation
     from acoustools.Utilities import create_points, add_lev_sig, generate_pressure_targets, TOP_BOARD, device
     from acoustools.Optimise.Objectives import target_pressure_mse_objective, propagate_abs_sum_objective
     from acoustools.Optimise.Constraints import constrain_phase_only, constrant_normalise_amplitude
@@ -17,28 +17,27 @@ if __name__ == '__main__':
     # paths = [path+"/Sphere-lam2.stl"]   
     # scatterer = load_multiple_scatterers(paths,dys=[-0.06],dzs=[-0.03])
 
-    p_ref = 12 * 0.22
+    p_ref = P_ref
 
     paths = [path+"/Sphere-lam2.stl"]
     scatterer = load_multiple_scatterers(paths)
     centre_scatterer(scatterer)
     print(scatterer.bounds())
     d = wavelength*2*0.71
-    # d = wavelength * 2
     # d = wavelength * 1.2345
-    # d = 0.0234ß
+    # d = 0.0234
     # d = wavelength+0.001
     scale_to_diameter(scatterer,d)
     get_edge_data(scatterer)
 
+    eps = 1e-6
+    k_eps = k + 1j*eps*k
 
     p = create_points(1,1, y=0,x=0,z=0)
 
-    H_method = 'OLS'
-    E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method='OLS', return_components=True)
+    E = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref, k=k_eps)
 
-    x = iterative_backpropagation(p, board=board)
-    x =translate_hologram(x, dz=0.001, board=board)
+    x = iterative_backpropagation(p,A=E)
 
     # A = torch.tensor((-0.09,0, 0.09))
     # B = torch.tensor((0.09,0, 0.09))
@@ -49,5 +48,5 @@ if __name__ == '__main__':
 
 
 
-    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(100,100),
-              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref,'k':k,"H":H }], vmax=8000)
+    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(200,200),
+              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref,'k':k_eps }], vmax=8000)
