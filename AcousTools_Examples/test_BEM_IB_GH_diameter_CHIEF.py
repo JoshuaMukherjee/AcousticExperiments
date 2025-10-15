@@ -33,8 +33,8 @@ if __name__ == '__main__':
     circumferences = []
     H_phases = []
 
-    N = 400
-    ds = torch.linspace(wavelength*1,4*wavelength, N)
+    N = 100
+    ds = torch.linspace(wavelength*1,2*wavelength, N)
 
 
     x = iterative_backpropagation(p)
@@ -65,7 +65,9 @@ if __name__ == '__main__':
         pressures_res.append(pressure.item())
 
 
-        internal_points  = get_CHIEF_points(scatterer, P = 1, start='centre')
+        internal_points  = get_CHIEF_points(scatterer, P = 20, start='centre', method='uniform')
+        # print(internal_points.shape)
+        
         # internal_points = get_centre_of_mass_as_points(scatterer)
         # internal_points = None
         # get_edge_data(scatterer)
@@ -84,6 +86,8 @@ if __name__ == '__main__':
 
         diameters.append(d.item())
         circumferences.append((3.1415*d.item())/ wavelength)
+
+        # exit()
 
 radii = [d/2 for d in diameters]
 kr = [k*r for r in radii]

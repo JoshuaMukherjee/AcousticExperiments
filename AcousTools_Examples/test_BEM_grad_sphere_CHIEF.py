@@ -1,7 +1,7 @@
 if __name__ == "__main__":
 
     from acoustools.BEM import  compute_E, propagate_BEM_pressure, BEM_forward_model_grad
-    from acoustools.Mesh import get_lines_from_plane, load_scatterer, scatterer_file_name
+    from acoustools.Mesh import get_lines_from_plane, load_scatterer, scatterer_file_name, get_CHIEF_points
     from acoustools.Utilities import create_points, TRANSDUCERS, device, add_lev_sig, forward_model_grad, propagate_abs, TOP_BOARD, BOTTOM_BOARD
     from acoustools.Solvers import wgs
     from acoustools.Visualiser import Visualise, ABC
@@ -17,6 +17,10 @@ if __name__ == "__main__":
     sphere_pth =  path+"/Sphere-lam2.stl"
     sphere = load_scatterer(sphere_pth, dy=-0.06, dz=0.0) #Make mesh at 0,0,0
 
+    internal_points  = get_CHIEF_points(sphere, P = 1, start='centre')
+    
+    
+
     # vedo.show(sphere, axes=1)
     # exit()
 
@@ -29,13 +33,13 @@ if __name__ == "__main__":
     # p = torch.tensor([[0,0],[0,0],[-0.06]]).unsqueeze(0).to(device)
 
 
-    E,F,G,H = compute_E(sphere, p, board=board, path=path, use_cache_H=USE_CACHE, return_components=True)
+    E,F,G,H = compute_E(sphere, p, board=board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
     x = wgs(p, A=E)
 
     print(torch.abs(E@x))
     print()
 
-    Ex, Ey, Ez, Fx, Fy, Fz, Gx, Gy, Gz, H = BEM_forward_model_grad(p,sphere, board, path=path, use_cache_H=USE_CACHE, return_components=True)
+    Ex, Ey, Ez, Fx, Fy, Fz, Gx, Gy, Gz, H = BEM_forward_model_grad(p,sphere, board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
 
     PGx = (Gx@H@x).squeeze()
     PGy = (Gy@H@x).squeeze()
@@ -61,7 +65,7 @@ if __name__ == "__main__":
 
     step = 0.000135156253 
     ps = get_finite_diff_points_all_axis(p, stepsize=step)
-    Efd,Ffd,Gfd,Hfd = compute_E(sphere, ps, board=board, path=path, use_cache_H=USE_CACHE, return_components=True)
+    Efd,Ffd,Gfd,Hfd = compute_E(sphere, ps, board=board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
 
     # print(ps)
     
@@ -128,7 +132,7 @@ if __name__ == "__main__":
 
 
     def propagate_GH(activations, points):
-        E,F,G,H = compute_E(sphere, points, board=board, path=path, use_cache_H=USE_CACHE, return_components=True)
+        E,F,G,H = compute_E(sphere, points, board=board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
         
         return torch.abs(G@H@activations)
 

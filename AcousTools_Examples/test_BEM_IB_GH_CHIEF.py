@@ -26,16 +26,17 @@ if __name__ == '__main__':
     # d = wavelength*2 * 1.05
     # d = wavelength * 3.34
     d = wavelength * 2
-    d = wavelength*2*0.71
-    d = 0.004 * 2
+    # d = wavelength*2*0.71
+    # d = 0.0001
     # d = wavelength+0.001
     scale_to_diameter(scatterer,d)
     get_edge_data(scatterer)
 
 
 
-    P = 1
-    internal_points = get_CHIEF_points(scatterer, P = P, start='centre')
+    internal_points  = get_CHIEF_points(scatterer, P = -1, start='centre', method='uniform', scale = 0.3, scale_mode='diameter-scale')
+    print(internal_points)
+    print(internal_points.shape)
     # internal_points = None
 
 
@@ -77,8 +78,9 @@ if __name__ == '__main__':
 
 
     
-    Visualise(*ABC(0.03), x,colour_functions=[propagate_BEM_pressure, GH_prop, propagate_abs, propagate_BEM_phase, GH_prop_phase, propagate_phase], 
-              res=(150,150), arangement=(2,3), cmaps=['hot','hot','hot', 'hsv', 'hsv', 'hsv'], link_ax=[0,1,2], vmax=8000,
+    Visualise(*ABC(0.03), x,colour_functions=[propagate_BEM_pressure, GH_prop, propagate_abs, propagate_BEM_phase, GH_prop_phase, propagate_phase],  
+              points=internal_points,
+              res=(300,300), arangement=(2,3), cmaps=['hot','hot','hot', 'hsv', 'hsv', 'hsv'], link_ax=[0,1,2], vmax=8000,
               colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H, "internal_points":internal_points }, 
                                     {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H, "internal_points":internal_points  }, 
                                     {'board':board, "p_ref":p_ref},
