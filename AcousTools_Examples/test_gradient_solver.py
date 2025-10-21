@@ -4,7 +4,7 @@ if __name__ == "__main__":
     from acoustools.Optimise.Objectives import propagate_abs_sum_objective, gorkov_analytical_sum_objective, pressure_abs_gorkov_trapping_stiffness_objective, target_pressure_mse_objective, target_gorkov_mse_objective
     from acoustools.Optimise.Constraints import constrain_phase_only, constrant_normalise_amplitude, constrain_sigmoid_amplitude, constrain_clamp_amp, normalise_amplitude_normal
     from acoustools.Gorkov import gorkov_analytical
-    from acoustools.Visualiser import Visualise
+    from acoustools.Visualiser import Visualise, ABC
 
     import torch    
 
@@ -114,13 +114,11 @@ if __name__ == "__main__":
         trap  =  p[:,:,1]
         
         
-        A = torch.tensor((-0.09,0, 0.09))
-        B = torch.tensor((0.09,0, 0.09))
-        C = torch.tensor((-0.09,0, -0.09))
-        normal = (0,1,0)
+        A,B,C = ABC(0.4)
         origin = (0,0,0)
 
         print(p.shape)
+        print(A,B,C)
         Visualise(A,B,C, x, points=p, vmax=7000)
         print(A,B,C)
 
@@ -141,7 +139,7 @@ if __name__ == "__main__":
 
             print(A,B,C)
             
-            point = p.unsqueeze(2)
+            point = p.unsqueeze(2).cpu().detach()
 
             Visualise(A,B,C, x, points=point, vmax=7000)
         
