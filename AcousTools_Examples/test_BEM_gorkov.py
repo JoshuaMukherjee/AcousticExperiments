@@ -1,12 +1,11 @@
-from acoustools.BEM import load_scatterer, scatterer_file_name, compute_E, propagate_BEM_pressure, BEM_forward_model_grad, BEM_gorkov_analytical
-from acoustools.Mesh import get_lines_from_plane
-from acoustools.Utilities import create_points, TRANSDUCERS, device, add_lev_sig, forward_model_grad, propagate_abs, TOP_BOARD, BOTTOM_BOARD
+from acoustools.BEM import load_scatterer, compute_E, propagate_BEM_pressure, BEM_gorkov_analytical
+from acoustools.Utilities import create_points, BOTTOM_BOARD
 from acoustools.Solvers import wgs
 from acoustools.Visualiser import Visualise, ABC
 import acoustools.Constants as Constants
 from acoustools.Gorkov import gorkov_analytical
 
-import vedo, torch
+import torch
 path = "../BEMMedia"
 
 USE_CACHE = True
