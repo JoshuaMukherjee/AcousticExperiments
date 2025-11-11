@@ -38,10 +38,10 @@ sphere_path = root + '/Sphere-lam2.stl'
 h_path = 'AcousTools_Examples/data/holos/Optimsed_holo_1755780306180471000.holo'
 x = load_holograms(h_path)[0]
 x = translate_hologram(x, dz=0.002)
-d = 0.005
-surface_d = wavelength / 5
+d = wavelength * 2
+surface_d = wavelength *  2.5
 ds = []
-max_d = wavelength * 3
+max_d = wavelength * 4
 
 
 N = 50
@@ -64,7 +64,7 @@ scale_to_diameter(sphere,d)
 centre_scatterer(sphere)
 com = get_centre_of_mass_as_points(sphere)
 
-Visualise(*ABC(0.1), x, points=com, show=False, colour_functions=[propagate_abs], colour_function_args=[{'board':board}])
+# Visualise(*ABC(0.1), x, points=com, show=False, colour_functions=[propagate_abs], colour_function_args=[{'board':board}])
 
 
 Fx,Fy,Fz = compute_force(x, com, board=board, return_components=True, V=v)
@@ -128,8 +128,8 @@ plt.plot(ds,Fzs,c='b', label='$F_z$')
 
 # plt.plot(ds,[i * 1e7 for i in error],c='b', label='$F_z$', linestyle=':')
 
-plt.hlines(Fx, ds[0], ds[-1],colors='r', linestyles='--')
-plt.hlines(Fy, ds[0], ds[-1],colors='g', linestyles='--')
-plt.hlines(Fz, ds[0], ds[-1],colors='b', linestyles='--')
+# plt.hlines(Fx, ds[0], ds[-1],colors='r', linestyles='--')
+# plt.hlines(Fy, ds[0], ds[-1],colors='g', linestyles='--')
+# plt.hlines(Fz, ds[0], ds[-1],colors='b', linestyles='--')
 
 plt.show()
