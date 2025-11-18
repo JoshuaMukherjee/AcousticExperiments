@@ -25,7 +25,8 @@ if __name__ == '__main__':
     print(scatterer.bounds())
     # d = wavelength*2 * 1.05
     # d = wavelength * 3.34
-    d = wavelength * 2
+    # d = wavelength * 2
+    d = 0.02
     # d = wavelength*2*0.71
     # d = 0.0001
     # d = wavelength+0.001
@@ -34,7 +35,7 @@ if __name__ == '__main__':
 
 
 
-    internal_points  = get_CHIEF_points(scatterer, P = -1, start='centre', method='uniform', scale = 0.3, scale_mode='diameter-scale')
+    internal_points  = get_CHIEF_points(scatterer, P = 30, start='centre', method='uniform', scale = 0.2, scale_mode='diameter-scale')
     print(internal_points)
     print(internal_points.shape)
     # internal_points = None
@@ -44,7 +45,7 @@ if __name__ == '__main__':
     p = create_points(1,1, y=0,x=0,z=0)
     p2 = create_points(1,1,0,0,-0.002)
 
-    H_method = 'LU'
+    H_method = 'OLS'
     E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True, internal_points=internal_points)
 
 
@@ -77,10 +78,10 @@ if __name__ == '__main__':
         return pressures
 
 
-    
-    Visualise(*ABC(0.03), x,colour_functions=[propagate_BEM_pressure, GH_prop, propagate_abs, propagate_BEM_phase, GH_prop_phase, propagate_phase],  
-              points=internal_points,
-              res=(300,300), arangement=(2,3), cmaps=['hot','hot','hot', 'hsv', 'hsv', 'hsv'], link_ax=[0,1,2], vmax=8000,
+    r = 200
+    Visualise(*ABC(0.02), x,colour_functions=[propagate_BEM_pressure, GH_prop, propagate_abs, propagate_BEM_phase, GH_prop_phase, propagate_phase],  
+            #   points=internal_points,
+              res=(r,r), arangement=(2,3), cmaps=['hot','hot','hot', 'hsv', 'hsv', 'hsv'], link_ax=[0,1,2], vmax=8000,
               colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H, "internal_points":internal_points }, 
                                     {'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref, "H":H, "internal_points":internal_points  }, 
                                     {'board':board, "p_ref":p_ref},

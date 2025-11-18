@@ -26,6 +26,8 @@ if __name__ == '__main__':
 
     H_method = 'OLS'
 
+
+    pressures_rect = []
     pressures = []
     pressures_res = []
     phases = []
@@ -73,10 +75,12 @@ if __name__ == '__main__':
         # get_edge_data(scatterer)
 
         E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True,internal_points=internal_points)
-
-
         pressure = propagate_BEM_pressure(x, p2, scatterer, board=board, H=H, path=path, p_ref=p_ref, internal_points=internal_points)
         pressures.append(pressure.item())
+
+        Er,Fr,Gr,Hr = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True,internal_points=internal_points, CHIEF_mode='rect')
+        pressure_r = propagate_BEM_pressure(x, p2, scatterer, board=board, H=Hr, path=path, p_ref=p_ref, internal_points=internal_points)
+        pressures_rect.append(pressure_r.item())
 
         # phase = propagate_BEM_phase(x, p2, scatterer, board=board, H=H, path=path, p_ref=p_ref, internal_points=internal_points)
         # phases.append((phase).item())
@@ -98,6 +102,7 @@ import matplotlib.pyplot as plt
 # plt.subplot(3,1,1)
 plt.plot(radii, pressures_res, label='Standard BEM')
 plt.plot(radii, pressures, label='BEM + CHIEF')
+plt.plot(radii, pressures_rect, label='BEM + CHIEF (rect)')
 plt.ylabel(f"Pressure @ (0,0,-{p2[:,2].item()}m) (Pa)")
 plt.xlabel("Sphere Radius (m)")
 plt.legend()
