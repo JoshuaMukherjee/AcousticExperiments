@@ -3,14 +3,14 @@ import pickle
 import time
 from acoustools.Levitator import LevitatorController
 
-N  =1000
+N  = 1000
 
-xs = pickle.load(open('acoustools/tests/data/circle' + str(N) + '.pth','rb'))
+xs = pickle.load(open('./AcousTools_Examples/data/circle' + str(N) + '.pth','rb'))
 
 
 print('Finished Computing \nConnecting to PAT...')
 try:
-    lev = LevitatorController(ids=(73,53))
+    lev = LevitatorController(ids=(999,1000))
     print('Connected')
     lev.levitate(xs[0])
 
