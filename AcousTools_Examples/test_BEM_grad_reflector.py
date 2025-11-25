@@ -1,7 +1,7 @@
 if __name__ == "__main__":
 
     from acoustools.BEM import  compute_E, propagate_BEM_pressure, BEM_forward_model_grad
-    from acoustools.Mesh import get_lines_from_plane, load_scatterer, scatterer_file_name, get_CHIEF_points, centre_scatterer, translate
+    from acoustools.Mesh import get_lines_from_plane, load_scatterer, scatterer_file_name
     from acoustools.Utilities import create_points, TRANSDUCERS, device, add_lev_sig, forward_model_grad, propagate_abs, TOP_BOARD, BOTTOM_BOARD
     from acoustools.Solvers import wgs
     from acoustools.Visualiser import Visualise, ABC
@@ -14,14 +14,8 @@ if __name__ == "__main__":
     USE_CACHE = True
     board = BOTTOM_BOARD
 
-    sphere_pth =  path+"/Sphere-lam2.stl"
-    sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
-    centre_scatterer(sphere)
-    translate(sphere, dz=-0.03)
-
-    # internal_points  = get_CHIEF_points(sphere, P = , start='centre')
-    
-    internal_points = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
+    reflector_path =  path+'/flat-lam4.stl'
+    reflector = load_scatterer(reflector_path, dz=0.06, roty=180)
 
     # vedo.show(sphere, axes=1)
     # exit()
@@ -31,19 +25,17 @@ if __name__ == "__main__":
 
     # p = create_points(N,B,y=0)
     # p = create_points(N,B,y=0,x=0,z=-0.04)
-    p = create_points(N,B, 0, 0, 0.05)
-    pt = p.clone()
+    p = create_points(N,B)
     # p = torch.tensor([[0,0],[0,0],[-0.06]]).unsqueeze(0).to(device)
 
 
-    E,F,G,H = compute_E(sphere, p, board=board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
-    x = wgs(p, A=E, board=board)
-    x = add_lev_sig(x, mode='Twin', board=board)
+    E,F,G,H = compute_E(reflector, p, board=board, path=path, use_cache_H=USE_CACHE, return_components=True)
+    x = wgs(p, A=E)
 
     print(torch.abs(E@x))
     print()
 
-    Ex, Ey, Ez, Fx, Fy, Fz, Gx, Gy, Gz, H = BEM_forward_model_grad(p,sphere, board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
+    Ex, Ey, Ez, Fx, Fy, Fz, Gx, Gy, Gz, H = BEM_forward_model_grad(p,reflector, board, path=path, use_cache_H=USE_CACHE, return_components=True)
 
     PGx = (Gx@H@x).squeeze()
     PGy = (Gy@H@x).squeeze()
@@ -69,13 +61,13 @@ if __name__ == "__main__":
 
     step = 0.000135156253 
     ps = get_finite_diff_points_all_axis(p, stepsize=step)
-    Efd,Ffd,Gfd,Hfd = compute_E(sphere, ps, board=board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
+    Efd,Ffd,Gfd,Hfd = compute_E(reflector, ps, board=board, path=path, use_cache_H=USE_CACHE, return_components=True)
 
     # print(ps)
     
-    # x_fd = wgs(p, A=Efd)
+    x_fd = wgs(p, A=E)
     
-    Fx = Ffd@x
+    Fx = Ffd@x_fd
     p = Fx[:,0:N,:]
     Fx_fd = Fx[:,N:,:].reshape(2,3,N)
 
@@ -93,7 +85,7 @@ if __name__ == "__main__":
 
     GH = Gfd@Hfd
 
-    GHx = GH@x
+    GHx = GH@x_fd
     p = GHx[:,0:N,:]
     GHx_fd = GHx[:,N:,:].reshape(2,3,N)
 
@@ -109,7 +101,7 @@ if __name__ == "__main__":
     print()
 
 
-    Efdx = Efd@x
+    Efdx = Efd@x_fd
     pE = Efdx[:,0:N,:]
     Efd_fd = Efdx[:,N:,:].reshape(2,3,N)
 
@@ -131,12 +123,12 @@ if __name__ == "__main__":
 
     # print(torch.abs(f_grad + gh_grad) / torch.abs(e_grad))
     
-    # exit()
+    exit()
    
 
 
-    def propagate_GH(activations, points, internal_points=None):
-        E,F,G,H = compute_E(sphere, points, board=board, path=path, use_cache_H=USE_CACHE, return_components=True, internal_points=internal_points)
+    def propagate_GH(activations, points):
+        E,F,G,H = compute_E(reflector, points, board=board, path=path, use_cache_H=USE_CACHE, return_components=True)
         
         return torch.abs(G@H@activations)
 
@@ -144,9 +136,10 @@ if __name__ == "__main__":
     # exit()
 
     abc = ABC(0.07)
+    normal = (0,1,0)
+    origin = (0,0,0)
 
 
-    Visualise(*abc, x, points=pt,
-              colour_functions=[propagate_BEM_pressure, propagate_abs,propagate_GH],colour_function_args=[{"scatterer":sphere,"board":board,"path":path, 'internal_points':internal_points},{"board":board},{'internal_points':internal_points}],vmax=6000, show=True)
+    line_params = {"scatterer":sphere,"origin":origin,"normal":normal}
 
-
+    Visualise(*abc, x, colour_functions=[propagate_BEM_pressure, propagate_abs,propagate_GH],colour_function_args=[{"scatterer":reflector,"board":board,"path":path},{"board":board},{}],vmax=9000, show=True)

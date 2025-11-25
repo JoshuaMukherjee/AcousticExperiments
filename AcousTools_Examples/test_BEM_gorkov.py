@@ -33,9 +33,9 @@ x = wgs(p, A=E)
 
 print(torch.abs(E@x))
 
-U = BEM_gorkov_analytical(x, p-d_lambda, sphere, board, path=path)
+U = BEM_gorkov_analytical(x, p, sphere, board, path=path)
 print(U)
-U_pm = gorkov_analytical(x, p-d_lambda, board)
+U_pm = gorkov_analytical(x, p, board)
 print(U_pm)
 
 abc = ABC(0.06)

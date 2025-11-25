@@ -12,7 +12,7 @@ if __name__ == "__main__":
     path = "../BEMMedia"
 
     USE_CACHE = True
-    board = TRANSDUCERS
+    board = TOP_BOARD
 
     sphere_pth =  path+"/Sphere-lam2.stl"
     sphere = load_scatterer(sphere_pth, dy=-0.06, dz=0.0) #Make mesh at 0,0,0
@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     # print(ps)
     
-    x_fd = wgs(p, A=E)
+    x_fd = x
     
     Fx = Ffd@x_fd
     p = Fx[:,0:N,:]
@@ -123,7 +123,7 @@ if __name__ == "__main__":
 
     # print(torch.abs(f_grad + gh_grad) / torch.abs(e_grad))
     
-    exit()
+    # exit()
    
 
 
