@@ -8,12 +8,12 @@ import acoustools.Constants as c
 import vedo, torch
 
 
-board = create_board(17, BOARD_POSITIONS)
+board = create_board(17, -1*BOARD_POSITIONS)
 
 path ='../BEMMedia'
-reflector = load_scatterer(path+'/flat-lam2.stl',dz=-0.05)
+reflector = load_scatterer(path+'/flat-lam2.stl', roty=180)
 
-p = create_points(1,1,x=0,y=0,z=-0.0475)
+p = create_points(1,1,x=0,y=0,z=-0.03)
 
 # 
 

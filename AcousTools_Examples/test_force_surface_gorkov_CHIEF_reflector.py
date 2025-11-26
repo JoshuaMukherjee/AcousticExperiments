@@ -2,7 +2,7 @@ from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propag
 from acoustools.Force import compute_force
 from acoustools.Solvers import wgs, translate_hologram, iterative_backpropagation
 from acoustools.Constants import wavelength, pi, P_ref as PREF
-from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer,get_CHIEF_points, merge_scatterers
+from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer,get_CHIEF_points, merge_scatterers, translate
 from acoustools.BEM import BEM_compute_force, compute_E, propagate_BEM_pressure, force_mesh_surface
 from acoustools.Visualiser import ABC, Visualise,force_quiver_3d
 
@@ -16,9 +16,8 @@ torch.set_printoptions(precision=8)
 # board=create_board(N=17, z=-0.06)
 board=BOTTOM_BOARD
 # p = create_points(1,1,x=wavelength/8, y=wavelength/8, z=wavelength/8)
-p = create_points(1,1, 0,0,0)
+p = create_points(1,1, 0,0,-0.06)
 
-x = iterative_backpropagation(p, board=board)
 # x = add_lev_sig(x)
 # x =translate_hologram(x, dz=0.001)
 
@@ -28,15 +27,21 @@ p_ref = 12* (2.214 / 10)
 # Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board, 'p_ref':p_ref}])
 
 path = "../BEMMedia"
+cache = False
 
 
-reflector = load_scatterer(path+'/flat-lam4.stl', dz=0.06, roty=180)
+reflector = load_scatterer(path+'/flat-lam1.stl', roty=180)
 CHIEF_pts = create_points(5,1, min_pos=-0.02, max_pos=0.02)
 CHIEF_pts[:,:2] *= 3
-CHIEF_pts[:,2] += 0.08
+CHIEF_pts[:,2] += 0.03
 
 
-cache = False
+E = compute_E(reflector, p, board, p_ref=p_ref, path=path)
+x = iterative_backpropagation(p, board=board, A=E)
+
+
+# Visualise(*ABC(0.12),x ,colour_functions=[propagate_BEM_pressure,], colour_function_args=[{'board':board,'scatterer':reflector, 'use_cache_H':cache, 'p_ref':p_ref}], res=(200,200), vmax=6000)
+
 
 # start_d =0.00001
 # max_d = wavelength
@@ -53,15 +58,15 @@ A_forces_x = []
 A_forces_y = []
 A_forces_z = []
 
-p2 = create_points(1,1,0,0,-0.002)
+p2 = create_points(1,1,0,0,-0.062)
 pressures = []
 
 ds = []
 
-N = 300
+N = 250
 # diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
-# diameters = torch.linspace(1*wavelength, 1.5*wavelength, N)
-diameters = torch.linspace(0.001, wavelength * 3 , N)
+diameters = torch.linspace(1*wavelength, 4*wavelength, N)
+# diameters = torch.linspace(0.88 * wavelength * 2, 0.89 * 2 * wavelength , N)
 
 for i in range(N):
     print(i)
@@ -74,13 +79,15 @@ for i in range(N):
     sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
     scale_to_diameter(sphere,d)
     centre_scatterer(sphere)
+    translate(sphere, dz=-0.06)
     com = get_centre_of_mass_as_points(sphere)
 
     scatterer = merge_scatterers(reflector, sphere)
 
     # internal_points  = get_CHIEF_points(sphere, P = 1, start='centre')
     # internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale=0.002)
-    internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
+    P = int(i/5) + 20
+    internal_points  = get_CHIEF_points(sphere, P = P, start='centre', method='uniform', scale = 0.2, scale_mode='diameter-scale')
     s_pts = internal_points.clone()
     # internal_points = torch.cat([internal_points, CHIEF_pts], dim=2)
     print(internal_points.shape)
@@ -100,7 +107,7 @@ for i in range(N):
     U_forces_y.append(U_force[1].cpu().detach())
     U_forces_z.append(U_force[2].cpu().detach())
 
-    dim = 0.75*wavelength + d.item()
+    dim = 4*wavelength + d.item()
     A_force= force_mesh_surface(x, scatterer, board, return_components=False,H=H,path=path,
                                                         diameter=dim, use_cache_H=cache, p_ref=p_ref,internal_points=internal_points).squeeze().detach()
     
