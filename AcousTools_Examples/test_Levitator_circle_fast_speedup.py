@@ -10,7 +10,7 @@ xs = pickle.load(open('./AcousTools_Examples/data/circle' + str(N) + '.pth','rb'
 
 print('Finished Computing \nConnecting to PAT...')
 try:
-    lev = LevitatorController(ids=(999,1000))
+    lev = LevitatorController(ids=(87,999))
     print('Connected')
     lev.levitate(xs[0])
 
