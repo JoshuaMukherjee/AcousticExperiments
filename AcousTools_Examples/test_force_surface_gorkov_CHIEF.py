@@ -52,7 +52,7 @@ pressures = []
 
 ds = []
 
-N = 400
+N = 200
 # diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
 diameters = torch.linspace(0.0001, 4*wavelength, N)
 
@@ -72,7 +72,8 @@ for i in range(N):
 
     # internal_points  = get_CHIEF_points(sphere, P = 1, start='centre')
     # internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale=0.002)
-    internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
+    # internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
+    internal_points  = get_CHIEF_points(sphere, P = 10, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
 
 
     # E,F,G,H = compute_E(sphere, com, board,path=path, return_components=True, use_cache_H=cache, p_ref=p_ref,internal_points=internal_points)

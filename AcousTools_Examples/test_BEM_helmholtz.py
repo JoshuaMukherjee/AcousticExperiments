@@ -5,7 +5,7 @@ if __name__ == '__main__':
     from acoustools.Optimise.Constraints import constrain_phase_only, constrant_normalise_amplitude
     from acoustools.Visualiser import Visualise,ABC
     from acoustools.Mesh import load_multiple_scatterers,scale_to_diameter, centre_scatterer, get_edge_data
-    from acoustools.BEM import propagate_BEM_pressure, compute_E
+    from acoustools.BEM import propagate_BEM_pressure, compute_E, propagate_BEM_helmholtz_abs
     from acoustools.Constants import wavelength,k, P_ref
 
     import torch
@@ -41,14 +41,4 @@ if __name__ == '__main__':
     x = iterative_backpropagation(p, board=board)
     x =translate_hologram(x, dz=0.001, board=board)
 
-    # A = torch.tensor((-0.09,0, 0.09))
-    # B = torch.tensor((0.09,0, 0.09))
-    # C = torch.tensor((-0.09,0, -0.09))
-    # normal = (0,1,0)
-    # origin = (0,0,0)
-
-
-
-
-    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(100,100),
-              colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref,'k':k,"H":H }], vmax=8000)
+    Visualise(*ABC(0.01), x, res=(100,100), colour_functions=[propagate_BEM_helmholtz_abs], colour_function_args=[{'scatterer':scatterer,'board':board, 'path':path, 'p_ref':p_ref}])
