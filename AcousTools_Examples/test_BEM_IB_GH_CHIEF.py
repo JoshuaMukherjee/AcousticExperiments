@@ -45,9 +45,9 @@ if __name__ == '__main__':
     p = create_points(1,1, y=0,x=0,z=0)
     p2 = create_points(1,1,0,0,-0.002)
 
-    H_method = 'OLS'
+    H_method = 'LU'
     E,F,G,H = compute_E(scatterer, p,board=board, path=path, use_cache_H=False, p_ref=p_ref,H_method=H_method, return_components=True, internal_points=internal_points)
-
+    exit()
 
 
 
