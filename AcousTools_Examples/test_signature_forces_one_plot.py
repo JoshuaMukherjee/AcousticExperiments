@@ -35,23 +35,7 @@ x_eye = add_lev_sig(x, board, mode = 'Eye')
 
 A,B,C = ABC(0.06)
 
-img_trap = Visualise_single_blocks(A,B,C,x_trap).cpu().detach()
-img_twin = Visualise_single_blocks(A,B,C,x_twin).cpu().detach()
-img_vortex = Visualise_single_blocks(A,B,C,x_vortex).cpu().detach()
-img_eye = Visualise_single_blocks(A,B,C,x_eye).cpu().detach()
 
-
-
-p_trap = propagate_abs(x_trap, p).cpu().detach().item()
-p_twin = propagate_abs(x_twin, p).cpu().detach().item()
-p_vortex = propagate_abs(x_vortex, p).cpu().detach().item()
-p_eye = propagate_abs(x_eye, p).cpu().detach().item()
-
-
-U_trap = gorkov_analytical(x_trap, p, board).cpu().detach().item()
-U_twin = gorkov_analytical(x_twin, p, board).cpu().detach().item() 
-U_vortex = gorkov_analytical(x_vortex, p, board).cpu().detach().item() 
-U_eye= gorkov_analytical(x_eye, p, board).cpu().detach().item() 
 
 F_trap_xs = []
 F_trap_ys = []
@@ -159,53 +143,40 @@ for i in range(N):
 
 N = 5
 
-plt.subplot(2,3,1)
-plt.bar([1,],[p_trap,])
-plt.bar([2,],[p_twin,])
-plt.bar([3,],[p_vortex,])
-plt.bar([4,],[p_eye,])
-plt.xticks([1,2,3,4],labels=labels,rotation=0)
-plt.ylabel('Pressure (Pa)')
-
-plt.subplot(2,3,2)
-plt.bar([1,],[U_trap,])
-plt.bar([2,],[U_twin,])
-plt.bar([3,],[U_vortex,])
-plt.bar([4,],[U_eye,])
-plt.xticks([1,2,3,4],labels=labels,rotation=0)
-# plt.yticks([i*1e-5 for i in range(5)], [-1*i*1e-5 for i in range(5)])
-plt.ylabel('Gorkov')
-
 lim = 0.0007
 
-plt.subplot(2,3,4)
 
-plt.plot(pos,F_trap_xs)
-plt.plot(pos,F_twin_xs)
-plt.plot(pos,F_vortex_xs)
-plt.plot(pos,F_eye_xs)
-plt.ylim(-1 * lim, lim )
-plt.ylabel('$F_x$ (N)')
+plt.plot(pos,F_trap_xs, color='red', label='$F_x$ Trap')
+plt.plot(pos,F_twin_xs, color='blue', label='$F_x$ Twin')
 
-plt.subplot(2,3,5)
+plt.plot(pos,F_trap_ys, color='red', label='$F_y$ Trap', linestyle=':')
+plt.plot(pos,F_twin_ys, color='blue', label='$F_y$ Twin', linestyle=':')
 
-plt.plot(pos,F_trap_ys)
-plt.plot(pos,F_twin_ys)
-plt.plot(pos,F_vortex_ys)
-plt.plot(pos,F_eye_ys)
-plt.ylim(-1 * lim, lim )
 
-plt.ylabel('$F_y$ (N)')
+plt.plot(pos,F_trap_zs, color='red', label='$F_z$ Trap', linestyle='-.')
+plt.plot(pos,F_twin_zs, color='blue', label='$F_z$ Twin', linestyle='-.')
 
-plt.subplot(2,3,6)
 
-plt.plot(pos,F_trap_zs)
-plt.plot(pos,F_twin_zs)
-plt.plot(pos,F_vortex_zs)
-plt.plot(pos,F_eye_zs)
-plt.ylim(-1 * lim, lim )
+plt.ylabel('$F$ (N)')
+plt.legend()
 
-plt.ylabel('$F_z$ (N)')
+import pandas
+
+d = {"displacement":pos, 
+     'Trap Fx': F_trap_xs,
+     'Trap Fy': F_trap_ys,
+     'Trap Fz': F_trap_zs,
+     'Twin Fx': F_twin_xs,
+     'Twin Fy': F_twin_ys,
+     'Twin Fz': F_twin_zs,
+     }
+
+df = pandas.DataFrame(d)
+
+df.to_csv("AcousTools_Examples/outputs/sig_forces.csv")
+
+print(df)
+exit()
 
 
 # vmax = torch.max(torch.concat([img_trap,img_twin, img_vortex, img_eye]))
