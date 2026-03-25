@@ -11,7 +11,7 @@ path = '../BEMMedia'
 
 board = BOTTOM_BOARD
 
-THRESHOLD = wavelength*2
+THRESHOLD = 0.002
 
 with torch.no_grad():
     scatterer = load_scatterer('/flat-lam4.stl', root_path=path, dz=0, roty=180)
@@ -27,12 +27,15 @@ with torch.no_grad():
     scatterer.filename = scatterer_file_name(scatterer)
     calculate_features(scatterer)
 
-    p = create_points(1,1,0,0,0.03)
+    p = create_points(1,1,0,0,0.01)
 
     E,F,G,H = compute_E(scatterer, p, board, return_components=True, path=path)
 
     x = wgs(p, board=board, A=E)
 
-    A,B,C = ABC(0.05)
+    A,B,C = ABC(0.02)
 
-    Visualise(A,B,C, x, p, colour_functions=[propagate_BEM_pressure], colour_function_args=[{"board":board, "H":H, "scatterer":scatterer}], res=(100,100))
+    Visualise(A,B,C, x, p, 
+              colour_functions=[propagate_BEM_pressure], 
+              colour_function_args=[{"board":board, "H":H, "scatterer":scatterer}], 
+              res=(200,200))
