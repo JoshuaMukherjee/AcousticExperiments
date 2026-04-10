@@ -6,7 +6,7 @@ if __name__ == '__main__':
 
     print('Computing...')
     
-    COMPUTE = True
+    COMPUTE = False
     N = 1000
     radius = 0.02
     
@@ -34,7 +34,7 @@ if __name__ == '__main__':
     print('Finished Computing \nConnecting to PAT...')
     try:
         # lev = LevitatorController(ids=(999,1000))
-        lev = LevitatorController(ids=(73,53))
+        lev = LevitatorController()
         print('Connected')
         lev.levitate(xs[0])
 
@@ -47,7 +47,7 @@ if __name__ == '__main__':
         # lev.levitate(xs,num_loops=1)
 
         start = time.time_ns()
-        lev.set_frame_rate(6000)
+        lev.set_frame_rate(2000)
         lev.levitate(xs,num_loops=100)
         end = time.time_ns()
         print((end-start)/1e9, 'Seconds')

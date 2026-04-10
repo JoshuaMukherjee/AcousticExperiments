@@ -9,15 +9,17 @@ x = add_lev_sig(x)
 
 
 def vel_pot_x(activations, points):
-    return propagate_velocity_real(activations, points)[0]
+    return propagate_velocity_real(activations, points)[:,:,0]
 
 def vel_pot_y(activations, points):
-    return propagate_velocity_real(activations, points)[1]
+    return propagate_velocity_real(activations, points)[:,:,1]
 
 def vel_pot_z(activations, points):
-    return propagate_velocity_real(activations, points)[2]
+    return propagate_velocity_real(activations, points)[:,:,2]
 
 
     
 
-Visualise(*ABC(0.1, plane='xz'),x,colour_functions=[propagate_abs,vel_pot_x, vel_pot_y, vel_pot_z], link_ax=[1,2,3])
+Visualise(*ABC(0.03, plane='xz'),x,
+          colour_functions=[propagate_abs,vel_pot_x, vel_pot_y, vel_pot_z], 
+          link_ax=[1,2,3])
