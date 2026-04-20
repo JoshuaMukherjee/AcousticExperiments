@@ -26,7 +26,7 @@ get_edge_data(brick)
 board = create_board(2, -0.01)
 x = 1 * torch.exp(1j * torch.ones(1,1))
 
-P = 5spect
+P = 5
 internal_points = get_CHIEF_points(brick, P=P, method='tetra-random')
 # internal_points = None
 
