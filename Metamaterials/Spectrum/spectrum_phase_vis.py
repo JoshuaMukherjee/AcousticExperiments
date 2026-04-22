@@ -27,7 +27,7 @@ x = 1 * torch.exp(1j * torch.ones(1,1))
 
 colour_function_args = []
 
-P = 1000
+P = 0
 
 # print(sorted(os.listdir(path+folder)))
 # exit()
