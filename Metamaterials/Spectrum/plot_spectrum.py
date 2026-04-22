@@ -50,9 +50,16 @@ for f in sorted(os.listdir(path+folder)):
         return torch.angle(GH@activations)
 
 
-    A,B,C = ABC(0.01, origin = create_points(1,1,0,0,0.013))
+    A,B,C = ABC(0.03, origin=create_points(1,1,0,0,0.02))
 
-    Visualise(A,B,C, x, res = (100,100),
+    ratio = 6
+    res = 150
+
+    A[0] /= ratio
+    B[0] /= ratio
+    C[0] /= ratio
+
+    Visualise(A,B,C, x, res = (res//ratio,res),
             colour_functions=[render_GH_pressure,render_GH_pressure, '-', render_GH_phase,render_GH_phase,'-'], 
             colour_function_args=[{'path':path,'H':H,'board':board, 'scatterer':brick}, 
                                 {'path':path,'H':H_CHIEF,'board':board, 'scatterer':brick, 'internal_points':internal_points},

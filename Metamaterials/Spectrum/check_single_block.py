@@ -2,9 +2,12 @@ from acoustools.Mesh import load_scatterer, centre_scatterer, scale_to_diameter,
 from acoustools.Constants import wavelength
 from acoustools.BEM import get_cache_or_compute_H, compute_E, propagate_BEM_phase, propagate_BEM_pressure, compute_G
 from acoustools.Visualiser import Visualise, ABC
-from acoustools.Utilities import transducers, create_board
+from acoustools.Utilities import transducers, create_board, create_points
 
 import vedo, torch
+
+import matplotlib.pyplot as plt
+
 
 path = '../BEMMedia'
 
@@ -44,9 +47,16 @@ def render_GH_phase(activations, points, board, scatterer, H, **params):
     return torch.angle(GH@activations)
 
 
-A,B,C = ABC(0.01)
+A,B,C = ABC(0.03, origin=create_points(1,1,0,0,0.02))
 
-Visualise(A,B,C, x, res = (100,100), points =internal_points,
+ratio = 6
+res = 100
+
+A[0] /= ratio
+B[0] /= ratio
+C[0] /= ratio
+
+Visualise(A,B,C, x, res = (res//ratio,res), points =internal_points,
         colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure, '-', propagate_BEM_phase,propagate_BEM_phase,'-'], 
         colour_function_args=[{'path':path,'H':H,'board':board, 'scatterer':brick}, 
                               {'path':path,'H':H_CHIEF,'board':board, 'scatterer':brick, 'internal_points':internal_points},
@@ -56,6 +66,22 @@ Visualise(A,B,C, x, res = (100,100), points =internal_points,
                               {'ids':[3,4]}],
         link_ax=None, cmaps=['hot','hot','hot', 'hsv','hsv','hsv'], arrangement=(2,3),
         vmax = [100,200,None, None, None, 0.001],
-        vmin = [0,0,None, None, None, -0.001]
+        vmin = [0,0,None, None, None, -0.001],
+        depth=0,
+        show=False
           
         )
+
+plt.tight_layout()
+plt.show()
+
+
+# Visualise(A,B,C, x, res = (int(res/ratio),res), points =internal_points,
+#         colour_functions=[propagate_BEM_pressure], 
+#         colour_function_args=[{'path':path,'H':H,'board':board, 'scatterer':brick}],
+#         link_ax=None, cmaps=['hot'],
+#         vmax = [100,200,None, None, None, 0.001],
+#         vmin = [0,0,None, None, None, -0.001],
+#         depth=0
+          
+#         )
