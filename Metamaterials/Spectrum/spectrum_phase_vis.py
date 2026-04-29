@@ -22,12 +22,13 @@ def render_GH_phase(activations, points, board, scatterer, H, **params):
     GH = G@H
     return torch.angle(GH@activations)
 
-board = create_board(2, -0.02)
+board = create_board(2, -0.05)
 x = 1 * torch.exp(1j * torch.ones(1,1))
 
 colour_function_args = []
 
-P = 0
+P = 20
+internal_points = None
 
 # print(sorted(os.listdir(path+folder)))
 # exit()
@@ -48,8 +49,8 @@ for i,f in enumerate(sorted(os.listdir(path+folder))):
     centre_scatterer(brick)
     print(brick.bounds())
     # brick.subdivide(n=2)
-
-    internal_points = get_CHIEF_points(brick, P=P, method='tetra-random') if P else None
+    if internal_points is None:
+        internal_points = get_CHIEF_points(brick, P=P, method='tetra-random') if P else None
 
 
     H= get_cache_or_compute_H(brick, board, use_cache_H=False, path=path, internal_points=internal_points)
@@ -57,19 +58,19 @@ for i,f in enumerate(sorted(os.listdir(path+folder))):
 
     colour_function_args.append({'path':path,'H':H,'board':board, 'scatterer':brick})
 
-A,B,C = ABC(0.03, origin=create_points(1,1,0,0,0.028))
+A,B,C = ABC(0.01, origin=create_points(1,1,0,0,0.005))
 
-ratio = 6
-res = 150
+ratio = 4
+res = 250
 
 A[0] /= ratio
 B[0] /= ratio
 C[0] /= ratio
 
 Visualise(A,B,C, x, res = (res//ratio,res),
-        colour_functions=[render_GH_phase] * len(colour_function_args), 
+        colour_functions=[propagate_BEM_pressure] * len(colour_function_args), 
         colour_function_args=colour_function_args,
-        cmaps=['hsv']* len(colour_function_args),
+        cmaps=['hot']* len(colour_function_args),
         show=False,
         clr_labels=[''] * len(colour_function_args)
         )

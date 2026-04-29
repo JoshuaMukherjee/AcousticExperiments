@@ -2,7 +2,7 @@ from acoustools.Mesh import load_scatterer, centre_scatterer, scale_to_diameter,
 from acoustools.Constants import wavelength
 from acoustools.BEM import get_cache_or_compute_H, compute_E, propagate_BEM_phase, propagate_BEM_pressure, compute_G
 from acoustools.Visualiser import Visualise, ABC
-from acoustools.Utilities import transducers, create_board, create_points, propagate_phase, propagate_abs
+from acoustools.Utilities import transducers, create_board, create_points
 
 import vedo, torch
 
@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 path = '../BEMMedia'
 
-name = '/Metamaterials/300um/i-22_brick8-300um.stl'
+name = '/Metamaterials/200um/h-22_brick8-200um.stl'
 
 brick = load_scatterer(path + name)
 centre_scatterer(brick)
@@ -26,9 +26,8 @@ get_edge_data(brick)
 # vedo.show(brick, axes=1)
 # exit()
 
-board = create_board(2, -0.05)
+board = create_board(2, -0.01)
 x = 1 * torch.exp(1j * torch.ones(1,1))
-print(x.angle())
 
 P = 20
 internal_points = get_CHIEF_points(brick, P=P, method='tetra-random')
@@ -58,11 +57,11 @@ B[0] /= ratio
 C[0] /= ratio
 
 Visualise(A,B,C, x, res = (res//ratio,res), points =internal_points,
-        colour_functions=[propagate_abs,render_GH_pressure, '-', propagate_phase,render_GH_phase,'-'], 
-        colour_function_args=[{'board':board}, 
+        colour_functions=[propagate_BEM_pressure,propagate_BEM_pressure, '-', propagate_BEM_phase,propagate_BEM_phase,'-'], 
+        colour_function_args=[{'path':path,'H':H,'board':board, 'scatterer':brick}, 
                               {'path':path,'H':H_CHIEF,'board':board, 'scatterer':brick, 'internal_points':internal_points},
                               {'ids':[0,1]},
-                              {'board':board},
+                              {'path':path,'H':H,'board':board, 'scatterer':brick},
                               {'path':path,'H':H_CHIEF,'board':board, 'scatterer':brick, 'internal_points':internal_points},
                               {'ids':[3,4]}],
         link_ax=None, cmaps=['hot','hot','hot', 'hsv','hsv','hsv'], arrangement=(2,3),
