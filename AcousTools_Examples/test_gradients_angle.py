@@ -1,0 +1,170 @@
+
+if __name__ == "__main__":
+    from acoustools.Utilities import forward_model_batched, forward_model_grad, forward_model_second_derivative_unmixed, forward_model_second_derivative_mixed, TRANSDUCERS, create_points, add_lev_sig, propagate,DTYPE
+    from acoustools.Solvers import wgs
+    from acoustools.Gorkov import get_finite_diff_points_all_axis
+    from acoustools.Utilities import device, propagate_abs
+    from acoustools.Mesh import mesh_to_board
+    import acoustools.Constants as c
+
+    import torch
+
+    # torch.random.manual_seed(1)
+    torch.set_printoptions( precision=4)
+
+
+    def return_mixed_points(points,stepsize=0.000135156253, stepsize_x=None,stepsize_y=None,stepsize_z=None ):
+        '''
+        Only works for N=1
+        '''
+        if points.shape[2] > 1:
+            raise RuntimeError("Only for N=1")
+        
+        if stepsize_x is None:
+            stepsize_x = stepsize
+        
+        if stepsize_y is None:
+            stepsize_y = stepsize
+
+        if stepsize_z is None:
+            stepsize_z = stepsize
+
+
+        mixed_points = points.clone().repeat((1,1,13))
+        #Set x's
+        mixed_points[:,0,1] += stepsize_x
+        mixed_points[:,0,2] += stepsize_x
+        mixed_points[:,0,3] -= stepsize_x
+        mixed_points[:,0,4] -= stepsize_x
+        mixed_points[:,0,5] += stepsize_x
+        mixed_points[:,0,6] += stepsize_x
+        mixed_points[:,0,7] -= stepsize_x
+        mixed_points[:,0,8] -= stepsize_x
+        #Set y's
+        mixed_points[:,1,1] += stepsize_y
+        mixed_points[:,1,2] -= stepsize_y
+        mixed_points[:,1,3] += stepsize_y
+        mixed_points[:,1,4] -= stepsize_y
+        mixed_points[:,1,9] += stepsize_y
+        mixed_points[:,1,10] += stepsize_y
+        mixed_points[:,1,11] -= stepsize_y
+        mixed_points[:,1,12] -= stepsize_y
+        #Set z's
+        mixed_points[:,2,5] += stepsize_z
+        mixed_points[:,2,6] -= stepsize_z
+        mixed_points[:,2,7] += stepsize_z
+        mixed_points[:,2,8] -= stepsize_z
+        mixed_points[:,2,9] += stepsize_z
+        mixed_points[:,2,10] -= stepsize_z
+        mixed_points[:,2,11] += stepsize_z
+        mixed_points[:,2,12] -= stepsize_z
+
+        return mixed_points
+
+
+    N=1
+    B=1
+    D=3
+    for i in range(1):
+        # points = create_points(N,B,x=0.02, y=-0.005, z=-0.04)
+        points = create_points(N,B)
+        print(points)
+        points = torch.autograd.Variable(points.data, requires_grad=True).to(device).to(DTYPE)
+        board, norms  = mesh_to_board('../BEMMedia/cube-lam2.stl')
+
+        activations = wgs(points, board=board, norms=norms).to(DTYPE)
+        # activations = add_lev_sig(x, mode='Twin')
+        
+        F = forward_model_batched(points,transducers=board, norms = norms)
+        Fx, Fy, Fz = forward_model_grad(points,transducers=board, transducer_norms=norms)
+
+        Fxx, Fyy, Fzz = forward_model_second_derivative_unmixed(points,transducers=board, transducer_norms=norms)
+        Fxy, Fxz, Fyz = forward_model_second_derivative_mixed(points,transducers=board, transducer_norms=norms)
+
+        stepsize = 0.000135156253
+
+        fin_diff_points = get_finite_diff_points_all_axis(points,stepsize=stepsize)
+        print(fin_diff_points)
+
+        pressure_points = propagate(activations, fin_diff_points, board=board, norms=norms)
+        print(pressure_points)
+        pressure = pressure_points[:,:N]
+        pressure_fin_diff = pressure_points[:,N:]
+        # split = torch.reshape(pressure_fin_diff,(B,2, ((2*D))*N // 2))
+        split = torch.reshape(pressure_fin_diff,(B,2, -1))
+        print(split)
+        grad = (split[:,0,:] - split[:,1,:]) / (2*stepsize)
+        grad = (grad)
+
+        p  = (F@activations)
+
+        P_a = torch.autograd.grad (p, points, retain_graph=True, create_graph=True, grad_outputs=torch.ones((1,1,1)) + 0j)[0]   # creates graph of first derivative
+        pa = (P_a)
+        p_angle = torch.angle(P_a)
+
+        print("p", p.item())
+        print("Grad","Analytical","Finite Differences","Ratio",sep="\t")
+        Px  = (Fx@activations)
+        print("px pressure", torch.abs(Px).item(), torch.abs(grad[0,0]).item(), torch.abs(Px).item() / torch.abs(grad[0,0]).item(),sep="\t")
+        
+        Py  = (Fy@activations)
+        print("py pressure", torch.abs(Py).item(), torch.abs(grad[0,1]).item(), torch.abs(Py).item() / torch.abs(grad[0,1]).item(),sep="\t")
+        
+        Pz  = (Fz@activations)
+        print("pz pressure", torch.abs(Pz).item(), torch.abs(grad[0,2]).item(), torch.abs(Pz).item() / torch.abs(grad[0,2]).item(),sep="\t")
+        
+
+        print("px phase", torch.angle(Px).item(), torch.angle(grad[0,0]).item(), torch.angle(Px).item() / torch.angle(grad[0,0]).item(),sep="\t")
+        print("py phase", torch.angle(Py).item(), torch.angle(grad[0,1]).item(), torch.angle(Py).item() / torch.angle(grad[0,1]).item(),sep="\t")
+        print("pz phase", torch.angle(Pz).item(), torch.angle(grad[0,2]).item(), torch.angle(Pz).item() / torch.angle(grad[0,2]).item(),sep="\t")
+
+        # print("\n\n")
+        # print("Grad","Analytical","Autograd","Ratio",sep="\t")
+        # Px  = (Fx@activations)
+        # print("px pressure", torch.abs(Px).item(), torch.abs(pa[0,0]).item(), torch.abs(Px).item() / torch.abs(pa[0,0]).item(),sep="\t")
+        # Py  = (Fy@activations)
+        # print("py pressure", torch.abs(Py).item(), torch.abs(pa[0,1]).item(), torch.abs(Py).item() / torch.abs(pa[0,1]).item(),sep="\t")
+        # Pz  = (Fz@activations)
+        # print("pz pressure", torch.abs(Pz).item(), torch.abs(pa[0,2]).item(), torch.abs(Pz).item() / torch.abs(pa[0,2]).item(),sep="\t")
+
+        # print("px phase", torch.angle(Px).item(), torch.angle(pa[0,0]).item(), torch.angle(Px).item() / torch.angle(pa[0,0]).item(),sep="\t")
+        # print("py phase", torch.angle(Py).item(), torch.angle(pa[0,1]).item(), torch.angle(Py).item() / torch.angle(pa[0,1]).item(),sep="\t")
+        # print("pz phase", torch.angle(Pz).item(), torch.angle(pa[0,2]).item(), torch.angle(Pz).item() / torch.angle(pa[0,2]).item(),sep="\t")
+        
+        # print()
+
+
+        print("grad", 'Analytical', 'Finite Differences', 'Ratio', sep='\t')
+
+        grad_unmixed = (split[:,0,:] - 2*pressure + split[:,1,:]) / (stepsize**2)
+
+        Pxx = (Fxx@activations)
+        print("Pxx", Pxx.item(), (grad_unmixed[0,0]).item(), (grad_unmixed[0,0]).item() / Pxx.item(),sep="\t")
+        Pyy = (Fyy@activations)
+        print("Pyy", Pyy.item(), (grad_unmixed[0,1]).item(), (grad_unmixed[0,1]).item() / Pyy.item(),sep="\t")
+        Pzz = (Fzz@activations)
+        print("Pzz", Pzz.item(), (grad_unmixed[0,2]).item(), (grad_unmixed[0,2]).item() / Pzz.item(),sep="\t")
+
+        print()
+
+        stepsize_x = stepsize 
+        stepsize_y = stepsize 
+        stepsize_z = stepsize 
+
+        mixed_points = return_mixed_points(points,stepsize_x=stepsize_x, stepsize_y=stepsize_y, stepsize_z=stepsize_z)
+        mixed_pressure_points = propagate(activations, mixed_points, board=board, norms=norms)
+              
+        Pxy = (Fxy@activations)
+        mixed_pressure_fin_diff_xy = mixed_pressure_points[:,1:5] * torch.tensor([1,-1,-1,1])
+        Pxy_fd = torch.sum(mixed_pressure_fin_diff_xy) / (4*stepsize_x*stepsize_y)
+        print("Pxy",Pxy.item(), (Pxy_fd).item(),(Pxy_fd).item()/Pxy.item(),sep='\t')
+
+        Pxz = (Fxz@activations)
+        mixed_pressure_fin_diff_xz = mixed_pressure_points[:,5:9] * torch.tensor([1,-1,-1,1])
+        Pxz_fd = torch.sum(mixed_pressure_fin_diff_xz) / (4*stepsize_x*stepsize_y)
+        print("Pxz",Pxz.item(), (Pxz_fd).item(), (Pxz_fd).item()/Pxz.item() ,sep='\t')
+
+        Pyz = (Fyz@activations)
+        mixed_pressure_fin_diff_yz = mixed_pressure_points[:,9:] * torch.tensor([1,-1,-1,1])
+        Pyz_fd = torch.sum(mixed_pressure_fin_diff_yz) / (4*stepsize_y*stepsize_z)
+        print("Pyz",Pyz.item(), (Pyz_fd).item(), (Pyz_fd).item()/Pyz.item() ,sep='\t')
