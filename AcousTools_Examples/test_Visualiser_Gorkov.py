@@ -6,7 +6,7 @@ if __name__ == "__main__":
 
     import torch
 
-    p = create_points(1,1,y=0)
+    p = create_points(1,1,0,0,0)
     x = wgs(p)
     x = add_lev_sig(x)
 

@@ -1,8 +1,8 @@
 from acoustools.Utilities import TRANSDUCERS, create_points, add_lev_sig, propagate_abs, transducers, BOTTOM_BOARD
 from acoustools.Force import compute_force
-from acoustools.Solvers import wgs, translate_hologram, iterative_backpropagation
+from acoustools.Solvers import wgs, translate_hologram, iterative_backpropagation, kd_solver
 from acoustools.Constants import wavelength, pi, P_ref as PREF
-from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer,get_CHIEF_points
+from acoustools.Mesh import load_scatterer, get_centres_as_points, get_normals_as_points, get_areas, scale_to_diameter, get_centre_of_mass_as_points, centre_scatterer,get_CHIEF_points, translate
 from acoustools.BEM import BEM_compute_force, compute_E, propagate_BEM_pressure, force_mesh_surface
 from acoustools.Visualiser import ABC, Visualise,force_quiver_3d
 
@@ -13,20 +13,19 @@ import matplotlib.pyplot as plt
 torch.random.manual_seed(1)
 torch.set_printoptions(precision=8)
 
-board=TRANSDUCERS
+board=transducers(16, z=0.243/2)
 # board=BOTTOM_BOARD
 # p = create_points(1,1,x=wavelength/8, y=wavelength/8, z=wavelength/8)
-p = create_points(1,1, 0,0,0)
+p = create_points(1,1, 0,0, -0.243/2 + 0.121)
 
-x = iterative_backpropagation(p)
+x = kd_solver(p, board=board)
 x = add_lev_sig(x)
-x =translate_hologram(x, dz=0.001)
 
 p_ref = 12* (2.214 / 10) 
 # p_ref = PREF
 
-# Visualise(*ABC(0.1), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board, 'p_ref':p_ref}])
-
+# Visualise(*ABC(0.01), x,points=[p.real] , colour_functions=[propagate_abs], colour_function_args=[{'board':board, 'p_ref':p_ref}])
+# exit()
 path = "../BEMMedia"
 
 
@@ -52,9 +51,9 @@ pressures = []
 
 ds = []
 
-N = 200
+N = 120
 # diameters = torch.logspace(math.log10(start_d), math.log10(max_d), steps=N)
-diameters = torch.linspace(0.0001, 4*wavelength, N)
+diameters = torch.linspace(0.00001, 8*wavelength, N)
 
 
 for i in range(N):
@@ -68,12 +67,16 @@ for i in range(N):
     sphere = load_scatterer(sphere_pth) #Make mesh at 0,0,0
     scale_to_diameter(sphere,d)
     centre_scatterer(sphere)
+    translate(sphere, dz = -0.243/2 + 0.12)
     com = get_centre_of_mass_as_points(sphere)
+    # print(com)
+    # exit()
 
     # internal_points  = get_CHIEF_points(sphere, P = 1, start='centre')
     # internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale=0.002)
-    # internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
-    internal_points  = get_CHIEF_points(sphere, P = 10, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
+    internal_points  = get_CHIEF_points(sphere, P = 50, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
+    # internal_points  = get_CHIEF_points(sphere, P = 10, start='centre', method='uniform', scale = 0.1, scale_mode='diameter-scale')
+    # internal_points = None
 
 
     # E,F,G,H = compute_E(sphere, com, board,path=path, return_components=True, use_cache_H=cache, p_ref=p_ref,internal_points=internal_points)
@@ -95,8 +98,8 @@ for i in range(N):
     U_forces_y.append(U_force[1].cpu().detach())
     U_forces_z.append(U_force[2].cpu().detach())
 
-    dim = 3*wavelength + d.item()
-    A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path,
+    dim = 4*wavelength + d.item()
+    A_force= force_mesh_surface(x, sphere, board, return_components=False,H=H,path=path, 
                                                         diameter=dim, use_cache_H=cache, p_ref=p_ref,internal_points=internal_points).squeeze().detach()
     
     pressure = propagate_BEM_pressure(x, p2, sphere, board=board, H=H, path=path, p_ref=p_ref, internal_points=internal_points)
@@ -124,14 +127,14 @@ rs = [d/(2*wavelength) for d in ds]
 
 plt.subplot(2,1,1)
 
-plt.plot(rs, U_forces_x, color='r', linestyle=':', label=r'${-\nabla_x U}$')
-plt.plot(rs, U_forces_y, color='g', linestyle=':', label=r'${-\nabla_y U}$')
+# plt.plot(rs, U_forces_x, color='r', linestyle=':', label=r'${-\nabla_x U}$')
+# plt.plot(rs, U_forces_y, color='g', linestyle=':', label=r'${-\nabla_y U}$')
 plt.plot(rs, U_forces_z, color='b', linestyle=':', label=r'${-\nabla_z U}$')
 
 
-plt.plot(rs, A_forces_x, color='r', label='$F_x$')
-plt.plot(rs, A_forces_y, color='g', label='$F_y$')
-plt.plot(rs, A_forces_z, color='b', label='$F_z$')
+# plt.plot(rs, A_forces_x, color='r', label='$F_x$')
+# plt.plot(rs, A_forces_y, color='g', label='$F_y$')
+plt.plot(rs, A_forces_z, color='b', label='$F_z$', marker='x')
 
 # plt.scatter(ds, A_forces_x, color='r')
 # plt.scatter(ds, A_forces_y, color='g')
@@ -146,7 +149,7 @@ plt.legend()
 plt.ylabel('Force (N)')
 plt.xlabel('Particle Radius ($\lambda$)')
 
-plt.ylim(-5e-3, 5e-3)
+# plt.ylim(-5e-3, 5e-3)
 
 plt.subplot(2,1,2)
 
