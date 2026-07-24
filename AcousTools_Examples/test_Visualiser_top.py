@@ -16,6 +16,6 @@ if __name__ == "__main__":
     
     res = 200
     start = time.time_ns()
-    Visualise(A,B,C, x, res=(res,res), points=p, show=True, colour_functions=[propagate_abs,], colour_function_args=[{"board":board}])
+    Visualise(A,B,C, x, res=(res,res), points=p, show=True, colour_functions=[propagate_abs,], colour_function_args=[{"board":board, 'p_ref':2}])
     end = time.time_ns()
     print((end-start)/1e9)

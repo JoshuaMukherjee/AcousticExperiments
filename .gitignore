@@ -11,3 +11,5 @@ Media/*
 profile_output*
 *.holo
 *.stp
+
+.vscode/
