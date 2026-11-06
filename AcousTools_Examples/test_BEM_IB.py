@@ -23,7 +23,7 @@ if __name__ == '__main__':
     scatterer = load_multiple_scatterers(paths)
     centre_scatterer(scatterer)
     print(scatterer.bounds())
-    d = wavelength*2*0.71
+    d = wavelength
     # d = 0.0673426732
     # d = wavelength * 2
     # d = wavelength * 1.2345
@@ -50,5 +50,5 @@ if __name__ == '__main__':
 
 
 
-    Visualise(*ABC(0.03), x, points=p,colour_functions=[propagate_BEM_pressure], res=(100,100),
+    Visualise(*ABC(0.01), x,colour_functions=[propagate_BEM_pressure], res=(300,300), titles=[f'Diameter: {round(d/wavelength,2)}$\lambda$'],
               colour_function_args=[{'scatterer':scatterer,'board':board,'path':path,"use_cache_H":False,"p_ref":p_ref,'k':k,"H":H }], vmax=8000)
